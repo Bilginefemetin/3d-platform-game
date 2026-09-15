@@ -4,20 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
 </head>
 <body>
   <div id="game"></div>
   <div id="crosshair">+</div>
+  <div id="dash-meter" aria-label="Atılma hakkı">
+    <div class="dash-bar"></div>
+    <div class="dash-bar"></div>
+    <div class="dash-bar"></div>
+  </div>
   <div id="start-screen">
     <div class="panel">
       <h1>3D PLATFORM ARENA</h1>
       <p>Oynamak için tıkla</p>
-      <small>WASD: Hareket • Shift: Koş • Ctrl: Eğil/kay • Space: Zıpla • Mouse: Bakış</small>
+      <small>WASD: Hareket • Shift: Koş • Ctrl: Eğil/kay • Space: Zıpla • Q: Atıl • Mouse: Bakış</small>
     </div>
   </div>
-  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space zıpla • Mouse bakış</div>
+  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space zıpla • Q atılma • Mouse bakış</div>
   <div id="error-screen" class="hidden"></div>
-  <script type="module" src="game.js?v=6"></script>
+  <script type="module" src="game.js?v=7"></script>
 </body>
 </html>
