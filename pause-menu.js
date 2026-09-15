@@ -9,6 +9,7 @@
         <button data-pause="resume" class="pause-option active">OYUNA GERİ DÖN</button>
         <button data-pause="sound" class="pause-option">SES</button>
         <button data-pause="controls" class="pause-option">KONTROLLER</button>
+        <button data-pause="sensitivity" class="pause-option">HASSASİYET</button>
         <button data-pause="restart" class="pause-option">YENİDEN BAŞLAT</button>
         <button data-pause="menu" class="pause-option">ANA MENÜ</button>
       </div>
@@ -75,14 +76,6 @@
     detail.querySelector('#menu-confirm')?.addEventListener('click', () => { location.href = 'menu/'; });
   }
 
-  // Sensitivity is shown as a separate option while keeping the original five pause actions.
-  const sensitivityButton = document.createElement('button');
-  sensitivityButton.dataset.pause = 'sensitivity';
-  sensitivityButton.className = 'pause-option';
-  sensitivityButton.textContent = 'HASSASİYET';
-  root.querySelector('.pause-options').appendChild(sensitivityButton);
-  options.push(sensitivityButton);
-
   function openPause() {
     if (pauseOpen) return;
     pauseOpen=true; root.classList.add('visible');
@@ -138,6 +131,20 @@
     e.preventDefault();
   }, true);
 
-  window.addEventListener('pointerlockchange', () => {});
+  // Fare hassasiyetini oyunun mevcut mouse-look sistemine uygula.
+  document.addEventListener('mousemove', e => {
+    if (pauseOpen || !document.pointerLockElement || sensitivity === 1 || e.__arenaScaled) return;
+    const scaled = new MouseEvent('mousemove', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      movementX: e.movementX * sensitivity,
+      movementY: e.movementY * sensitivity
+    });
+    scaled.__arenaScaled = true;
+    e.stopImmediatePropagation();
+    document.dispatchEvent(scaled);
+  }, true);
+
   showDetail('resume');
 })();
