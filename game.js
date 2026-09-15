@@ -23,27 +23,15 @@ const torso=box(0,-.65,0,1.0,1.4,.55,0x2f5f91); torso.position.set(0,-.65,0); pl
 camera.position.set(0,1.6,0); player.add(camera);
 
 const keys={}; let yaw=0,pitch=0,vy=0;
-const walkSpeed=8, sprintSpeed=14, crouchSpeed=4.5, slideSpeed=16;
-const gravity=24, jump=9.5;
+const walkSpeed=8, sprintSpeed=15, crouchSpeed=4.5, slideStartSpeed=17;
+const gravity=24, jump=9.5, slideFriction=11;
 let locked=false, sliding=false, slideVelocity=new THREE.Vector3();
-const standingCameraY=1.6, crouchCameraY=0.9;
+const standingCameraY=1.6, crouchCameraY=.9;
 
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.code==='Space')e.preventDefault();
-  if(e.code==='ControlLeft'||e.code==='ControlRight'){
-    e.preventDefault();
-    const sprinting=keys.ShiftLeft||keys.ShiftRight;
-    // A crouch press while sprinting turns the current movement into a slide.
-    if(!sliding && sprinting){
-      const move=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));
-      if(move.lengthSq()){
-        move.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
-        slideVelocity.copy(move).multiplyScalar(slideSpeed);
-        sliding=true;
-      }
-    }
-  }
+  if(e.code==='ControlLeft'||e.code==='ControlRight')e.preventDefault();
 });
 addEventListener('keyup',e=>keys[e.code]=false);
 const start=document.querySelector('#start-screen');
@@ -52,22 +40,32 @@ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockEl
 document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=Math.max(-1.5,Math.min(1.5,pitch));player.rotation.y=yaw;camera.rotation.x=pitch});
 
 const clock=new THREE.Clock();
+let ctrlWasDown=false;
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.033);
  if(locked){
   const sprinting=keys.ShiftLeft||keys.ShiftRight;
   const crouching=keys.ControlLeft||keys.ControlRight;
+  const ctrlPressed=crouching&&!ctrlWasDown;
   const dir=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));
   if(dir.lengthSq()){
     dir.normalize();
     dir.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
-    if(!sliding)player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt);
   }
 
-  // The slide keeps moving even after CTRL is released, then smoothly loses momentum and stops.
+  // Press CTRL while moving with SHIFT to start one slide. Releasing CTRL never cancels it.
+  if(ctrlPressed && sprinting && dir.lengthSq()>0 && !sliding){
+    slideVelocity.copy(dir).multiplyScalar(slideStartSpeed);
+    sliding=true;
+  }
+
   if(sliding){
     player.position.addScaledVector(slideVelocity,dt);
-    slideVelocity.multiplyScalar(Math.pow(0.07,dt));
-    if(slideVelocity.length()<0.35){sliding=false;slideVelocity.set(0,0,0)}
+    const newSpeed=Math.max(0,slideVelocity.length()-slideFriction*dt);
+    if(newSpeed===0){slideVelocity.set(0,0,0);sliding=false;}
+    else slideVelocity.setLength(newSpeed);
+  }else if(dir.lengthSq()){
+    const speed=sprinting?(sprintSpeed):(crouching?crouchSpeed:walkSpeed);
+    player.position.addScaledVector(dir,speed*dt);
   }
 
   const targetCameraY=(crouching||sliding)?crouchCameraY:standingCameraY;
@@ -80,6 +78,7 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDel
   for(const [x,y,z,w,dz] of plats)if(Math.abs(px-x)<w/2&&Math.abs(pz-z)<dz/2&&player.position.y>=y&&player.position.y<=y+2.5)ground=y+1.05;
   if(player.position.y<=ground){player.position.y=ground;vy=0;if(keys.Space&&!crouching&&!sliding){vy=jump}}
  }
+ ctrlWasDown=crouching;
  renderer.render(scene,camera);
 }
 animate();
