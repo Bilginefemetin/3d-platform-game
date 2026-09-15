@@ -19,7 +19,7 @@ camera.position.set(0,1.6,0); player.add(camera);
 
 const keys={}; let yaw=0,pitch=0,vy=0;
 const walkSpeed=8,sprintSpeed=15,crouchSpeed=4.5,slideStartSpeed=17,gravity=24,jump=9.5,slideFriction=11;
-let locked=false,sliding=false,slideVelocity=new THREE.Vector3(),ctrlWasDown=false;
+let locked=false,sliding=false,slideVelocity=new THREE.Vector3(),ctrlWasDown=false,spaceWasDown=false;
 const standingCameraY=1.6,crouchCameraY=.9;
 
 // Fast forward throw/dash: Q uses one of three charges.
@@ -38,25 +38,24 @@ const dashRechargeTwo=4;
 const dashRechargeThree=5;
 
 const dashBars=document.querySelectorAll('.dash-bar');
-function updateDashUI(){
-  dashBars.forEach((bar,i)=>bar.classList.toggle('empty',i>=dashCharges));
-}
+function updateDashUI(){dashBars.forEach((bar,i)=>bar.classList.toggle('empty',i>=dashCharges));}
 updateDashUI();
 
 function doDash(){
   if(!locked||dashCharges<=0||dashCooldown>0)return;
-  dashCharges--;
-  updateDashUI();
-  dashTime=dashDuration;
-  dashCooldown=.28;
-  dashRechargeTimer=0;
-
+  dashCharges--; updateDashUI();
+  dashTime=dashDuration; dashCooldown=.28; dashRechargeTimer=0;
   const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion())).normalize();
   dashVelocity.copy(forward).multiplyScalar(dashSpeed);
-  // A small upward component makes the movement feel like a physical lunge rather than a teleport.
   dashVelocity.y+=3.5;
   vy=0;
 }
+
+// Double jump: first Space = normal jump, second Space = aerial jump.
+// After the aerial jump is used, it becomes available again after 3 seconds.
+const doubleJumpCooldownMax=3;
+let doubleJumpReady=true;
+let doubleJumpCooldown=0;
 
 addEventListener('keydown',e=>{
   if(keys[e.code])return;
@@ -78,35 +77,27 @@ document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.00
 document.addEventListener('contextmenu',e=>e.preventDefault());
 
 const clock=new THREE.Clock();
-const moveDir=new THREE.Vector3();
-const forward=new THREE.Vector3();
-const dashMove=new THREE.Vector3();
-const worldQuat=new THREE.Quaternion();
 
 function handleDashRecharge(dt){
   if(dashCharges>=dashMax){dashRechargeTimer=0;return;}
   if(dashTime>0)return;
   dashRechargeTimer+=dt;
+  if(dashCharges===2&&dashRechargeTimer>=dashRechargeOne){dashCharges=3;dashRechargeTimer=0;updateDashUI();}
+  else if(dashCharges===1&&dashRechargeTimer>=dashRechargeTwo){dashCharges=3;dashRechargeTimer=0;updateDashUI();}
+  else if(dashCharges===0&&dashRechargeTimer>=dashRechargeThree){dashCharges=3;dashRechargeTimer=0;updateDashUI();}
+}
 
-  if(dashCharges===2&&dashRechargeTimer>=dashRechargeOne){
-    dashCharges=3;
-    dashRechargeTimer=0;
-    updateDashUI();
-  }else if(dashCharges===1&&dashRechargeTimer>=dashRechargeTwo){
-    dashCharges=3;
-    dashRechargeTimer=0;
-    updateDashUI();
-  }else if(dashCharges===0&&dashRechargeTimer>=dashRechargeThree){
-    dashCharges=3;
-    dashRechargeTimer=0;
-    updateDashUI();
-  }
+function updateDoubleJump(dt){
+  if(doubleJumpReady)return;
+  doubleJumpCooldown=Math.max(0,doubleJumpCooldown-dt);
+  if(doubleJumpCooldown<=0){doubleJumpReady=true;doubleJumpCooldown=0;}
 }
 
 function updateMovement(dt){
   const sprinting=keys.ShiftLeft||keys.ShiftRight;
   const crouching=keys.ControlLeft||keys.ControlRight;
   const ctrlPressed=crouching&&!ctrlWasDown;
+  const spacePressed=keys.Space&&!spaceWasDown;
   const dir=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));
   if(dir.lengthSq()){dir.normalize();dir.applyAxisAngle(new THREE.Vector3(0,1,0),yaw)}
 
@@ -126,7 +117,6 @@ function updateMovement(dt){
     }else if(dir.lengthSq()){
       player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt);
     }
-
     vy-=gravity*dt;
     player.position.y+=vy*dt;
   }
@@ -138,26 +128,27 @@ function updateMovement(dt){
   let ground=0;
   const px=player.position.x,pz=player.position.z;
   const plats=[[0,1,-10,14,10],[18,4,-3,10,9],[-20,3,12,12,12],[8,6,16,16,8],[-16,8,20,9,9],[28,1,23,10,10],[-29,1,-19,11,8],[28,8,-22,9,9]];
-  for(const [x,y,z,w,dz] of plats){
-    if(Math.abs(px-x)<w/2&&Math.abs(pz-z)<dz/2&&player.position.y>=y&&player.position.y<=y+2.5)ground=y+1.05;
-  }
+  for(const [x,y,z,w,dz] of plats){if(Math.abs(px-x)<w/2&&Math.abs(pz-z)<dz/2&&player.position.y>=y&&player.position.y<=y+2.5)ground=y+1.05;}
+
   if(player.position.y<=ground){
     player.position.y=ground;
     if(vy<0)vy=0;
-    if(keys.Space&&!crouching&&!sliding&&dashTime<=0)vy=jump;
+    if(spacePressed&&!crouching&&!sliding&&dashTime<=0)vy=jump;
+  }else if(spacePressed&&!crouching&&!sliding&&dashTime<=0&&doubleJumpReady){
+    vy=jump;
+    doubleJumpReady=false;
+    doubleJumpCooldown=doubleJumpCooldownMax;
   }
 
   ctrlWasDown=crouching;
+  spaceWasDown=keys.Space;
 }
 
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.033);
   dashCooldown=Math.max(0,dashCooldown-dt);
-  if(locked){
-    updateMovement(dt);
-    handleDashRecharge(dt);
-  }
+  if(locked){updateMovement(dt);handleDashRecharge(dt);updateDoubleJump(dt);}
   renderer.render(scene,camera);
 }
 animate();
