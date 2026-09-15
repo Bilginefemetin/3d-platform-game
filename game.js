@@ -22,85 +22,116 @@ const walkSpeed=8,sprintSpeed=15,crouchSpeed=4.5,slideStartSpeed=17,gravity=24,j
 let locked=false,sliding=false,slideVelocity=new THREE.Vector3(),ctrlWasDown=false;
 const standingCameraY=1.6,crouchCameraY=.9;
 
-// Grappling hook / visible cable
+// Dual grappling hooks: Q = left, E = right.
 const raycaster=new THREE.Raycaster();
 const grappleTargets=[];
 scene.traverse(o=>{if(o.isMesh) grappleTargets.push(o)});
-let grappleActive=false,grapplePoint=new THREE.Vector3();
-let grappleLine=null,grappleRope=null,grappleHead=null;
+const hooks={
+  left:{active:false,holding:false,point:new THREE.Vector3(),line:null,rope:null,head:null},
+  right:{active:false,holding:false,point:new THREE.Vector3(),line:null,rope:null,head:null}
+};
 const grappleMaterial=new THREE.LineBasicMaterial({color:0x20242a});
 const ropeMaterial=new THREE.MeshStandardMaterial({color:0x20242a,roughness:.65,metalness:.1});
 const hookMaterial=new THREE.MeshStandardMaterial({color:0x30363b,metalness:.8,roughness:.25});
 
-function makeGrappleVisual(){
-  // Thin guide line plus a thicker rope so the cable is easy to see.
+function makeHookVisual(hook){
   const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
-  grappleLine=new THREE.Line(geo,grappleMaterial); grappleLine.frustumCulled=false; scene.add(grappleLine);
-
+  hook.line=new THREE.Line(geo,grappleMaterial); hook.line.frustumCulled=false; scene.add(hook.line);
   const ropeGeo=new THREE.CylinderGeometry(.035,.035,1,8);
-  grappleRope=new THREE.Mesh(ropeGeo,ropeMaterial);
-  grappleRope.frustumCulled=false;
-  grappleRope.visible=false;
-  scene.add(grappleRope);
-
-  grappleHead=new THREE.Group();
+  hook.rope=new THREE.Mesh(ropeGeo,ropeMaterial); hook.rope.frustumCulled=false; hook.rope.visible=false; scene.add(hook.rope);
+  hook.head=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.16,.045,8,18),hookMaterial);
-  ring.rotation.x=Math.PI/2; grappleHead.add(ring);
+  ring.rotation.x=Math.PI/2; hook.head.add(ring);
   const tip=new THREE.Mesh(new THREE.ConeGeometry(.07,.28,6),hookMaterial);
-  tip.rotation.x=-Math.PI/2; tip.position.z=.17; grappleHead.add(tip);
-  grappleHead.visible=false; scene.add(grappleHead);
+  tip.rotation.x=-Math.PI/2; tip.position.z=.17; hook.head.add(tip);
+  hook.head.visible=false; scene.add(hook.head);
 }
-makeGrappleVisual();
+makeHookVisual(hooks.left); makeHookVisual(hooks.right);
 
-function fireGrapple(){
-  if(!locked)return;
+function findGrapplePoint(){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=raycaster.intersectObjects(grappleTargets,false);
-  if(!hits.length)return;
-  const hit=hits.find(h=>h.object!==grappleLine&&h.object!==grappleRope&&h.object!==grappleHead);
-  if(!hit)return;
-  grapplePoint.copy(hit.point);
-  grappleActive=true;
-  grappleHead.visible=true;
-  grappleHead.position.copy(grapplePoint);
-  grappleHead.lookAt(camera.getWorldPosition(new THREE.Vector3()));
+  return hits.find(h=>h.object!==hooks.left.line&&h.object!==hooks.left.rope&&h.object!==hooks.left.head&&h.object!==hooks.right.line&&h.object!==hooks.right.rope&&h.object!==hooks.right.head)||null;
 }
-function cancelGrapple(){grappleActive=false;grappleHead.visible=false;grappleRope.visible=false;grappleLine.visible=false}
+function prepareGrapple(hook){
+  if(!locked||hook.active)return;
+  const hit=findGrapplePoint();
+  if(!hit)return;
+  hook.point.copy(hit.point);
+  hook.holding=true;
+  hook.head.visible=true;
+  hook.head.position.copy(hook.point);
+}
+function firePreparedGrapple(hook){
+  if(!locked||!hook.holding)return;
+  hook.holding=false;
+  hook.active=true;
+  hook.head.visible=true;
+  hook.head.position.copy(hook.point);
+  hook.head.lookAt(camera.getWorldPosition(new THREE.Vector3()));
+}
+function cancelGrapple(hook){hook.holding=false;hook.active=false;hook.head.visible=false;hook.rope.visible=false;hook.line.visible=false}
+function cancelAllGrapples(){cancelGrapple(hooks.left);cancelGrapple(hooks.right)}
 
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();if(e.code==='ControlLeft'||e.code==='ControlRight')e.preventDefault();if(e.code==='KeyE')fireGrapple()});
-addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('keydown',e=>{
+  if(keys[e.code])return;
+  keys[e.code]=true;
+  if(e.code==='Space')e.preventDefault();
+  if(e.code==='ControlLeft'||e.code==='ControlRight')e.preventDefault();
+  if(e.code==='KeyQ')prepareGrapple(hooks.left);
+  if(e.code==='KeyE')prepareGrapple(hooks.right);
+});
+addEventListener('keyup',e=>{
+  keys[e.code]=false;
+  if(e.code==='KeyQ')firePreparedGrapple(hooks.left);
+  if(e.code==='KeyE')firePreparedGrapple(hooks.right);
+});
 
 const start=document.querySelector('#start-screen');
 start.addEventListener('click',()=>renderer.domElement.requestPointerLock());
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;start.classList.toggle('hidden',locked);if(!locked)cancelGrapple()});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;start.classList.toggle('hidden',locked);if(!locked)cancelAllGrapples()});
 document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=Math.max(-1.5,Math.min(1.5,pitch));player.rotation.y=yaw;camera.rotation.x=pitch});
-document.addEventListener('mousedown',e=>{if(e.button===0)fireGrapple();if(e.button===2)cancelGrapple()});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 
 const clock=new THREE.Clock();
 const tmpStart=new THREE.Vector3();
 const tmpMid=new THREE.Vector3();
 const tmpDir=new THREE.Vector3();
-function updateGrappleCable(){
-  if(!grappleActive)return;
+function updateHookVisual(hook){
+  if(!hook.active&&!hook.holding)return;
   camera.getWorldPosition(tmpStart);
-  const positions=grappleLine.geometry.attributes.position;
+  const positions=hook.line.geometry.attributes.position;
   positions.setXYZ(0,tmpStart.x,tmpStart.y,tmpStart.z);
-  positions.setXYZ(1,grapplePoint.x,grapplePoint.y,grapplePoint.z);
+  positions.setXYZ(1,hook.point.x,hook.point.y,hook.point.z);
   positions.needsUpdate=true;
-
-  // A real 3D rope between the player and the exact point where the hook landed.
-  tmpDir.copy(grapplePoint).sub(tmpStart);
-  const distance=tmpDir.length();
-  if(distance>.001){
-    grappleRope.visible=true;
-    tmpDir.normalize();
-    tmpMid.copy(tmpStart).add(grapplePoint).multiplyScalar(.5);
-    grappleRope.position.copy(tmpMid);
-    grappleRope.scale.set(1,distance,1);
-    grappleRope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tmpDir);
+  hook.line.visible=hook.active;
+  hook.head.position.copy(hook.point);
+  if(hook.active){
+    tmpDir.copy(hook.point).sub(tmpStart);
+    const distance=tmpDir.length();
+    if(distance>.001){
+      hook.rope.visible=true;
+      tmpDir.normalize();
+      tmpMid.copy(tmpStart).add(hook.point).multiplyScalar(.5);
+      hook.rope.position.copy(tmpMid);
+      hook.rope.scale.set(1,distance,1);
+      hook.rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tmpDir);
+    }
+  }else{
+    hook.rope.visible=false;
   }
-  grappleHead.position.copy(grapplePoint);
+}
+
+function updateGrapplePull(hook,dt){
+  if(!hook.active)return;
+  const playerWorld=camera.getWorldPosition(tmpStart);
+  const toHook=hook.point.clone().sub(playerWorld);
+  const distance=toHook.length();
+  if(distance<2.2){cancelGrapple(hook);return}
+  toHook.normalize();
+  const pullSpeed=Math.min(32,10+distance*.65);
+  player.position.addScaledVector(toHook,pullSpeed*dt);
+  vy=0;
 }
 
 function animate(){
@@ -116,18 +147,8 @@ function animate(){
     if(sliding){player.position.addScaledVector(slideVelocity,dt);const ns=Math.max(0,slideVelocity.length()-slideFriction*dt);if(ns===0){slideVelocity.set(0,0,0);sliding=false}else slideVelocity.setLength(ns)}
     else if(dir.lengthSq()){player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt)}
 
-    if(grappleActive){
-      const playerWorld=camera.getWorldPosition(new THREE.Vector3());
-      const toHook=grapplePoint.clone().sub(playerWorld);
-      const distance=toHook.length();
-      if(distance<2.2){cancelGrapple()}
-      else{
-        toHook.normalize();
-        const pullSpeed=Math.min(32,10+distance*.65);
-        player.position.addScaledVector(toHook,pullSpeed*dt);
-        vy=0;
-      }
-    }
+    updateGrapplePull(hooks.left,dt);
+    updateGrapplePull(hooks.right,dt);
 
     camera.position.y=THREE.MathUtils.lerp(camera.position.y,(crouching||sliding)?crouchCameraY:standingCameraY,Math.min(1,dt*14));
     vy-=gravity*dt;player.position.y+=vy*dt;
@@ -138,10 +159,8 @@ function animate(){
     ctrlWasDown=crouching;
   }
 
-  updateGrappleCable();
-  grappleLine.visible=grappleActive;
-  grappleRope.visible=grappleActive;
-  grappleHead.visible=grappleActive;
+  updateHookVisual(hooks.left);
+  updateHookVisual(hooks.right);
   renderer.render(scene,camera);
 }
 animate();
