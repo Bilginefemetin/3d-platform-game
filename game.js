@@ -20,13 +20,31 @@ box(-45,9,0,2,20,90,0x59636d); box(45,9,0,2,20,90,0x59636d);
 // Platforms
 [[0,2,-10,14,2,10],[18,5,-3,10,2,9],[-20,4,4,12,2,12],[8,7,16,16,2,8],[-16,9,20,9,2,9],[28,2,23,10,2,10],[-29,2,-19,11,2,8],[28,9,-22,9,2,9]].forEach(p=>box(...p,0x77828d));
 
-// Simple first-person player body, hidden from view except a subtle lower torso
+// First-person player body is hidden from view
 const player=new THREE.Object3D(); player.position.set(0,2.2,25); scene.add(player);
 const torso=box(0,-.65,0,1.0,1.4,.55,0x2f5f91); torso.position.set(0,-.65,0); player.add(torso); torso.visible=false;
 camera.position.set(0,1.6,0); player.add(camera);
 
-const keys={}; let yaw=0,pitch=0,vy=0; let locked=false; const speed=8, gravity=24, jump=9.5;
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault()}); addEventListener('keyup',e=>keys[e.code]=false);
+const keys={}; let yaw=0,pitch=0,vy=0;
+const walkSpeed=8, sprintSpeed=14, crouchSpeed=4.5, slideSpeed=16;
+const gravity=24, jump=9.5;
+let locked=false, sliding=false, slideVelocity=new THREE.Vector3();
+const standingCameraY=1.6, crouchCameraY=0.9;
+
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='Space')e.preventDefault();
+  if(e.code==='ControlLeft'||e.code==='ControlRight'){
+    e.preventDefault();
+    // Pressing crouch while sprinting starts a momentum slide.
+    if(!sliding && keys.ShiftLeft||!sliding && keys.ShiftRight){
+      const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+      slideVelocity.copy(forward).multiplyScalar(slideSpeed);
+      sliding=true;
+    }
+  }
+});
+addEventListener('keyup',e=>keys[e.code]=false);
 const start=document.querySelector('#start-screen');
 start.addEventListener('click',()=>{renderer.domElement.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;start.classList.toggle('hidden',locked)});
@@ -34,15 +52,33 @@ document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.00
 
 const clock=new THREE.Clock();
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.033);
- if(locked){const dir=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));if(dir.lengthSq()){dir.normalize();dir.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);player.position.addScaledVector(dir,speed*dt)}
+ if(locked){
+  const sprinting=keys.ShiftLeft||keys.ShiftRight;
+  const crouching=keys.ControlLeft||keys.ControlRight;
+  const dir=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));
+  if(dir.lengthSq()){
+    dir.normalize();
+    dir.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+    if(!sliding)player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt);
+  }
+
+  // Slide gradually loses momentum until it stops.
+  if(sliding){
+    player.position.addScaledVector(slideVelocity,dt);
+    slideVelocity.multiplyScalar(Math.pow(0.08,dt));
+    if(slideVelocity.length()<0.45 || !crouching){sliding=false;slideVelocity.set(0,0,0)}
+  }
+
+  // Lower the camera while crouching/sliding.
+  const targetCameraY=(crouching||sliding)?crouchCameraY:standingCameraY;
+  camera.position.y=THREE.MathUtils.lerp(camera.position.y,targetCameraY,Math.min(1,dt*14));
+
   vy-=gravity*dt; player.position.y+=vy*dt;
-  // Keep player inside arena
   player.position.x=Math.max(-41,Math.min(41,player.position.x)); player.position.z=Math.max(-41,Math.min(41,player.position.z));
-  // Floor + platform landing
   let ground=0; const px=player.position.x,pz=player.position.z;
   const plats=[[0,1,-10,14,10],[18,4,-3,10,9],[-20,3,4,12,12],[8,6,16,16,8],[-16,8,20,9,9],[28,1,23,10,10],[-29,1,-19,11,8],[28,8,-22,9,9]];
   for(const [x,y,z,w,dz] of plats)if(Math.abs(px-x)<w/2&&Math.abs(pz-z)<dz/2&&player.position.y>=y&&player.position.y<=y+2.5)ground=y+1.05;
-  if(player.position.y<=ground){player.position.y=ground;vy=0;if(keys.Space){vy=jump}}
+  if(player.position.y<=ground){player.position.y=ground;vy=0;if(keys.Space&&!crouching&&!sliding){vy=jump}}
  }
  renderer.render(scene,camera);
 }
