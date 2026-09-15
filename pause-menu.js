@@ -10,7 +10,6 @@
         <button data-pause="sound" class="pause-option">SES</button>
         <button data-pause="controls" class="pause-option">KONTROLLER</button>
         <button data-pause="sensitivity" class="pause-option">HASSASİYET</button>
-        <button data-pause="restart" class="pause-option">YENİDEN BAŞLAT</button>
         <button data-pause="menu" class="pause-option">ANA MENÜ</button>
       </div>
       <section id="pause-detail" class="pause-detail"></section>
@@ -70,9 +69,7 @@
     else if(type==='controls') renderControls();
     else if(type==='sensitivity') renderSensitivity();
     else if(type==='resume') detail.innerHTML = `<p class="detail-note">Oyuna kaldığın yerden devam et.</p>`;
-    else if(type==='restart') detail.innerHTML = `<h2>YENİDEN BAŞLAT</h2><p class="detail-note">Oyun baştan yüklenecek.</p><button class="confirm-btn" id="restart-confirm">YENİDEN BAŞLAT</button>`;
     else if(type==='menu') detail.innerHTML = `<h2>ANA MENÜ</h2><p class="detail-note">Ana menüye dönmek istediğine emin misin?</p><button class="confirm-btn" id="menu-confirm">ANA MENÜYE DÖN</button>`;
-    detail.querySelector('#restart-confirm')?.addEventListener('click', () => location.reload());
     detail.querySelector('#menu-confirm')?.addEventListener('click', () => { location.href = 'menu/'; });
   }
 
@@ -131,16 +128,9 @@
     e.preventDefault();
   }, true);
 
-  // Fare hassasiyetini oyunun mevcut mouse-look sistemine uygula.
   document.addEventListener('mousemove', e => {
     if (pauseOpen || !document.pointerLockElement || sensitivity === 1 || e.__arenaScaled) return;
-    const scaled = new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      movementX: e.movementX * sensitivity,
-      movementY: e.movementY * sensitivity
-    });
+    const scaled = new MouseEvent('mousemove', {bubbles:true,cancelable:true,view:window,movementX:e.movementX*sensitivity,movementY:e.movementY*sensitivity});
     scaled.__arenaScaled = true;
     e.stopImmediatePropagation();
     document.dispatchEvent(scaled);
