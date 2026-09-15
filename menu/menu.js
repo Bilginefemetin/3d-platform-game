@@ -10,26 +10,20 @@ coinCount.textContent=coins.toLocaleString('tr-TR');
 nameInput.value=localStorage.getItem('arenaCharacterName')||'İsimsiz Karakter';
 nameInput.addEventListener('input',()=>localStorage.setItem('arenaCharacterName',nameInput.value.trim()||'İsimsiz Karakter'));
 
-const bundles=[
-  {type:'KARAKTER KOZMETİĞİ',name:'UCUZ KASA',price:1000,desc:'Karakter kozmetiği'},
-  {type:'KARAKTER KOZMETİĞİ',name:'ORTA KASA',price:20000,desc:'Karakter kozmetiği'},
-  {type:'KARAKTER KOZMETİĞİ',name:'PAHALI KASA',price:30000,desc:'Karakter kozmetiği'}
-];
 const skinBundles=[
-  {type:'SKİN KOZMETİĞİ',name:'UCUZ SKİN',price:1000,desc:'Karakter kozmetiği'},
-  {type:'SKİN KOZMETİĞİ',name:'ORTA SKİN',price:20000,desc:'Karakter kozmetiği'},
-  {type:'SKİN KOZMETİĞİ',name:'PAHALI SKİN',price:30000,desc:'Karakter kozmetiği'}
+  {type:'SKİN KASASI',name:'UCUZ SKİN KASASI',price:1000,desc:'Karakter kozmetiği'},
+  {type:'SKİN KASASI',name:'ORTA SKİN KASASI',price:20000,desc:'Karakter kozmetiği'},
+  {type:'SKİN KASASI',name:'PAHALI SKİN KASASI',price:30000,desc:'Karakter kozmetiği'}
 ];
 const eliminationBundles=[
-  {type:'ELEME EFEKTİ KOZMETİĞİ',name:'UCUZ ELEME EFEKTİ',price:1000,desc:'Eleme effekti kozmetiği'},
-  {type:'ELEME EFEKTİ KOZMETİĞİ',name:'ORTA ELEME EFEKTİ',price:20000,desc:'Eleme effekti kozmetiği'},
-  {type:'ELEME EFEKTİ KOZMETİĞİ',name:'PAHALI ELEME EFEKTİ',price:30000,desc:'Eleme effekti kozmetiği'}
+  {type:'ELEME EFEKTİ KASASI',name:'UCUZ ELEME EFEKTİ KASASI',price:1000,desc:'Eleme effekti kozmetiği'},
+  {type:'ELEME EFEKTİ KASASI',name:'ORTA ELEME EFEKTİ KASASI',price:20000,desc:'Eleme effekti kozmetiği'},
+  {type:'ELEME EFEKTİ KASASI',name:'PAHALI ELEME EFEKTİ KASASI',price:30000,desc:'Eleme effekti kozmetiği'}
 ];
 
 function market(){
   title.textContent='MARKET';
   content.innerHTML=`
-    <div class="market-section"><div class="section-title">KARAKTER KASALARI</div><div class="market-row">${bundles.map(card).join('')}</div></div>
     <div class="market-section"><div class="section-title">SKİN KASALARI</div><div class="market-row">${skinBundles.map(card).join('')}</div></div>
     <div class="market-section"><div class="section-title">ELEME EFEKTLERİ KASALARI</div><div class="market-row">${eliminationBundles.map(card).join('')}</div></div>
     <p class="market-note">Kasa sistemi şimdilik sabit kozmetik paketler olarak hazır. İçerik ve efektleri sen daha sonra ekleyebilirsin.</p>`;
