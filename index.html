@@ -4,30 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
   <div id="game"></div>
   <div id="crosshair">+</div>
-  <div id="dash-meter" aria-label="Atılma hakkı">
-    <div class="dash-bar"></div>
-    <div class="dash-bar"></div>
-    <div class="dash-bar"></div>
-  </div>
-  <div id="boost-meter" aria-label="Yukarı itiş hakkı">
-    <div class="boost-bar"></div>
-    <div class="boost-bar"></div>
-    <div class="boost-bar"></div>
-  </div>
-  <div id="start-screen">
-    <div class="panel">
-      <h1>3D PLATFORM ARENA</h1>
-      <p>Oynamak için tıkla</p>
-      <small>WASD: Hareket • Shift: Koş • Ctrl: Eğil/kay • Space: Zıpla • Q: Atıl • E: Yukarı İtiş • Mouse: Bakış</small>
-    </div>
-  </div>
-  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space zıpla • Q atılma • E yukarı itiş • Mouse bakış</div>
+  <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
+  <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
+  <div id="score-hud"><span>ENERJİ HEDEFLERİ</span><b id="score">0</b></div>
+  <div id="energy-hud"><span>ENERJİ</span><div class="energy-track"><div id="energy-fill"></div></div><b id="energy-value">100</b></div>
+  <div id="ability-hud">F: Enerji Dalgası &nbsp; • &nbsp; E: Yukarı İtiş</div>
+  <div id="start-screen"><div class="panel"><h1>3D PLATFORM ARENA</h1><p>Oynamak için tıkla</p><small>WASD: Hareket • Shift: Koş • Ctrl: Eğil/kay • Space: Çift zıpla • Q: Atıl • E: Yukarı İtiş • F: Enerji Dalgası • Mouse: Bakış</small></div></div>
+  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atılma • E yukarı itiş • F enerji dalgası • Mouse bakış</div>
   <div id="error-screen" class="hidden"></div>
-  <script type="module" src="game.js?v=8"></script>
+  <script type="module" src="game.js?v=9"></script>
 </body>
 </html>
