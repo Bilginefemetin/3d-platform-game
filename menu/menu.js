@@ -42,13 +42,20 @@ function simple(section){
   else content.innerHTML='<p>Ayarlar burada olacak.</p>';
 }
 
+function openPanel(section,button){
+  document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
+  button.classList.add('active');
+  panel.style.display='block';
+  section==='market'?market():simple(section);
+}
+
 document.querySelectorAll('.menu-tabs button').forEach(button=>{
-  button.addEventListener('click',()=>{
+  button.addEventListener('dblclick',()=>{
+    panel.style.display='none';
     document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
-    button.classList.add('active');
-    panel.style.display='block';
-    button.dataset.section==='market'?market():simple(button.dataset.section);
   });
+  button.addEventListener('click',()=>openPanel(button.dataset.section,button));
 });
 
+// Oyun ana menüden başlar; panel açılmadan önce görünmez.
 panel.style.display='none';
