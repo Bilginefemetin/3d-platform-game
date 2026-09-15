@@ -22,7 +22,6 @@ const walkSpeed=8,sprintSpeed=15,crouchSpeed=4.5,slideStartSpeed=17,gravity=24,j
 let locked=false,sliding=false,slideVelocity=new THREE.Vector3(),ctrlWasDown=false,spaceWasDown=false;
 const standingCameraY=1.6,crouchCameraY=.9;
 
-// Fast forward throw/dash: Q uses one of three charges.
 const dashMax=3;
 let dashCharges=dashMax;
 let dashVelocity=new THREE.Vector3();
@@ -51,11 +50,36 @@ function doDash(){
   vy=0;
 }
 
-// Double jump: first Space = normal jump, second Space = aerial jump.
-// After the aerial jump is used, it becomes available again after 3 seconds.
 const doubleJumpCooldownMax=3;
 let doubleJumpReady=true;
 let doubleJumpCooldown=0;
+
+// Safe mobility ability: E gives a short upward shock-boost instead of attacking a target.
+const boostMax=3;
+let boostCharges=boostMax;
+let boostRechargeTimer=0;
+const boostRechargeTime=3;
+const boostPower=18;
+const boostCooldownMax=.45;
+let boostCooldown=0;
+const boostBars=document.querySelectorAll('.boost-bar');
+function updateBoostUI(){boostBars.forEach((bar,i)=>bar.classList.toggle('empty',i>=boostCharges));}
+updateBoostUI();
+function doBoost(){
+  if(!locked||boostCharges<=0||boostCooldown>0)return;
+  boostCharges--; boostRechargeTimer=0; boostCooldown=boostCooldownMax; updateBoostUI();
+  vy=Math.max(vy,boostPower);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.8, .07, 8, 28),new THREE.MeshBasicMaterial({color:0x6ee7ff,transparent:true,opacity:.9}));
+  ring.position.copy(player.position); ring.position.y-=1.0; ring.rotation.x=Math.PI/2; scene.add(ring);
+  const born=performance.now();
+  const animateRing=()=>{const age=(performance.now()-born)/320; if(age>=1){scene.remove(ring);ring.geometry.dispose();ring.material.dispose();return;} ring.scale.setScalar(1+age*4); ring.material.opacity=.9*(1-age); requestAnimationFrame(animateRing)};
+  animateRing();
+}
+function updateBoostRecharge(dt){
+  if(boostCharges>=boostMax){boostRechargeTimer=0;return;}
+  boostRechargeTimer+=dt;
+  if(boostRechargeTimer>=boostRechargeTime){boostCharges=boostMax;boostRechargeTimer=0;updateBoostUI();}
+}
 
 addEventListener('keydown',e=>{
   if(keys[e.code])return;
@@ -63,6 +87,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Space')e.preventDefault();
   if(e.code==='ControlLeft'||e.code==='ControlRight')e.preventDefault();
   if(e.code==='KeyQ')doDash();
+  if(e.code==='KeyE')doBoost();
 });
 addEventListener('keyup',e=>{keys[e.code]=false});
 
@@ -148,7 +173,8 @@ function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.033);
   dashCooldown=Math.max(0,dashCooldown-dt);
-  if(locked){updateMovement(dt);handleDashRecharge(dt);updateDoubleJump(dt);}
+  boostCooldown=Math.max(0,boostCooldown-dt);
+  if(locked){updateMovement(dt);handleDashRecharge(dt);updateDoubleJump(dt);updateBoostRecharge(dt);}
   renderer.render(scene,camera);
 }
 animate();
