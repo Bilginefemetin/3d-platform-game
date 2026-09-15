@@ -20,13 +20,19 @@ const skinBundles=[
   {type:'SKİN KASASI',name:'ORTA SKİN KASASI',price:20000,desc:'Skin slotları için orta paket'},
   {type:'SKİN KASASI',name:'PAHALI SKİN KASASI',price:30000,desc:'Skin slotları için büyük paket'}
 ];
+const eliminationBundles=[
+  {type:'ELEME EFEKTİ KASASI',name:'UCUZ ELEME EFEKTİ KASASI',price:1000,desc:'Eleme efekti slotları için paket'},
+  {type:'ELEME EFEKTİ KASASI',name:'ORTA ELEME EFEKTİ KASASI',price:20000,desc:'Daha geniş efekt paketi'},
+  {type:'ELEME EFEKTİ KASASI',name:'PAHALI ELEME EFEKTİ KASASI',price:30000,desc:'En kapsamlı efekt paketi'}
+];
 
 function market(){
   title.textContent='MARKET';
   content.innerHTML=`
     <div class="market-section"><div class="section-title">KARAKTER KASALARI</div><div class="market-row">${bundles.map(card).join('')}</div></div>
     <div class="market-section"><div class="section-title">SKİN KASALARI</div><div class="market-row">${skinBundles.map(card).join('')}</div></div>
-    <p class="market-note">Kasa sistemi şimdilik kozmetik paket olarak hazır. İçerik ve skinleri sen daha sonra ekleyebilirsin.</p>`;
+    <div class="market-section"><div class="section-title">ELEME EFEKTLERİ KASALARI</div><div class="market-row">${eliminationBundles.map(card).join('')}</div></div>
+    <p class="market-note">Kasa sistemi şimdilik sabit kozmetik paketler olarak hazır. İçerik ve efektleri sen daha sonra ekleyebilirsin.</p>`;
   content.querySelectorAll('.buy-card').forEach(btn=>btn.addEventListener('click',()=>{
     const price=Number(btn.dataset.price);
     if(coins<price){btn.classList.add('shake');setTimeout(()=>btn.classList.remove('shake'),300);return;}
@@ -37,7 +43,7 @@ function market(){
 function card(x){return `<button class="buy-card" data-price="${x.price}"><span class="crate-icon"></span><strong>${x.name}</strong><small>${x.desc}</small><span class="price"><span class="coin"></span>${x.price.toLocaleString('tr-TR')}</span><span class="buy-text">SATIN AL</span></button>`}
 function simple(section){
   title.textContent=labels[section];
-  if(section==='inventory') content.innerHTML='<p>Karakterlerin ve skinlerin burada görünecek.</p>';
+  if(section==='inventory') content.innerHTML='<p>Karakterlerin, skinlerin ve eleme efektlerin burada görünecek.</p>';
   else if(section==='ranking') content.innerHTML='<p>Sıralama sistemi daha sonra eklenecek.</p>';
   else content.innerHTML='<p>Ayarlar burada olacak.</p>';
 }
