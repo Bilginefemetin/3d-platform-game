@@ -3,6 +3,7 @@ const title=document.querySelector('#panel-title');
 const content=document.querySelector('#panel-content');
 const coinCount=document.querySelector('#coin-count');
 const nameInput=document.querySelector('#character-name');
+const panel=document.querySelector('#menu-panel');
 
 let coins=Number(localStorage.getItem('arenaCoins')||0);
 coinCount.textContent=coins.toLocaleString('tr-TR');
@@ -45,8 +46,9 @@ document.querySelectorAll('.menu-tabs button').forEach(button=>{
   button.addEventListener('click',()=>{
     document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
     button.classList.add('active');
+    panel.style.display='block';
     button.dataset.section==='market'?market():simple(button.dataset.section);
   });
 });
-document.querySelector('.menu-tabs button[data-section="market"]').classList.add('active');
-market();
+
+panel.style.display='none';
