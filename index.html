@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=22" />
-  <link rel="stylesheet" href="pause-menu.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=23" />
+  <link rel="stylesheet" href="pause-menu.css?v=2" />
 </head>
 <body>
   <div id="game"></div>
@@ -24,13 +24,21 @@
     <div id="menu-panel"><div id="panel-title">MARKET</div></div>
   </div>
 
+  <div id="start-screen" class="hidden">
+    <div class="start-card">
+      <div class="start-kicker">3D PLATFORM ARENA</div>
+      <h1>OYUNA BAŞLA</h1>
+      <p>Devam etmek için tıkla ve oyuna gir.</p>
+      <button id="start-button">BAŞLA</button>
+    </div>
+  </div>
+
   <div id="crosshair">+</div>
   <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
   <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
   <div id="score-hud"><span>ENERJİ HEDEFLERİ</span><b id="score">0</b></div>
   <div id="energy-hud"><span>ENERJİ</span><div class="energy-track"><div id="energy-fill"></div></div><b id="energy-value">100</b></div>
   <div id="ability-hud">F: Enerji Dalgası &nbsp; • &nbsp; E: Yukarı İtiş &nbsp; • &nbsp; Sağ tık: Küreyi Çek &nbsp; • &nbsp; Sol tık: Enerji Işını</div>
-  <div id="start-screen" class="hidden"></div>
   <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
   <div id="error-screen" class="hidden"></div>
 
@@ -39,6 +47,8 @@
     const menu = document.querySelector('#menu-screen');
     const character = document.querySelector('#menu-character');
     const title = document.querySelector('#panel-title');
+    const startScreen = document.querySelector('#start-screen');
+    const startButton = document.querySelector('#start-button');
     const buttons = document.querySelectorAll('.menu-btn');
     buttons.forEach(btn => btn.addEventListener('click', () => {
       buttons.forEach(b => b.classList.remove('active'));
@@ -47,11 +57,19 @@
     }));
     character.addEventListener('click', () => {
       menu.classList.add('menu-hidden');
+      startScreen.classList.remove('hidden');
+    });
+    startButton.addEventListener('click', () => {
+      startScreen.classList.add('hidden');
       document.querySelector('#game canvas')?.requestPointerLock();
     });
     document.addEventListener('pointerlockchange', () => {
-      if (document.pointerLockElement) menu.classList.add('menu-hidden');
-      else if (!document.querySelector('#pause-overlay')?.classList.contains('visible')) menu.classList.remove('menu-hidden');
+      if (document.pointerLockElement) {
+        menu.classList.add('menu-hidden');
+        startScreen.classList.add('hidden');
+      } else if (!document.querySelector('#pause-overlay')?.classList.contains('visible')) {
+        startScreen.classList.remove('hidden');
+      }
     });
   </script>
   <script src="pause-menu.js?v=1"></script>
