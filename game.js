@@ -13,14 +13,11 @@ const sun=new THREE.DirectionalLight(0xffffff,2.5); sun.position.set(35,60,25); 
 
 function box(x,y,z,w,h,d,mat=0x6f7b86){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:mat,roughness:.78}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
 
-// Large enclosed arena
 box(0,-1,0,90,2,90,0x3f4952);
 box(0,9,-45,90,20,2,0x59636d); box(0,9,45,90,20,2,0x59636d);
 box(-45,9,0,2,20,90,0x59636d); box(45,9,0,2,20,90,0x59636d);
-// Platforms
 [[0,2,-10,14,2,10],[18,5,-3,10,2,9],[-20,4,4,12,2,12],[8,7,16,16,2,8],[-16,9,20,9,2,9],[28,2,23,10,2,10],[-29,2,-19,11,2,8],[28,9,-22,9,2,9]].forEach(p=>box(...p,0x77828d));
 
-// First-person player body is hidden from view
 const player=new THREE.Object3D(); player.position.set(0,2.2,25); scene.add(player);
 const torso=box(0,-.65,0,1.0,1.4,.55,0x2f5f91); torso.position.set(0,-.65,0); player.add(torso); torso.visible=false;
 camera.position.set(0,1.6,0); player.add(camera);
@@ -36,11 +33,15 @@ addEventListener('keydown',e=>{
   if(e.code==='Space')e.preventDefault();
   if(e.code==='ControlLeft'||e.code==='ControlRight'){
     e.preventDefault();
-    // Pressing crouch while sprinting starts a momentum slide.
-    if(!sliding && keys.ShiftLeft||!sliding && keys.ShiftRight){
-      const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
-      slideVelocity.copy(forward).multiplyScalar(slideSpeed);
-      sliding=true;
+    const sprinting=keys.ShiftLeft||keys.ShiftRight;
+    // A crouch press while sprinting turns the current movement into a slide.
+    if(!sliding && sprinting){
+      const move=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));
+      if(move.lengthSq()){
+        move.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+        slideVelocity.copy(move).multiplyScalar(slideSpeed);
+        sliding=true;
+      }
     }
   }
 });
@@ -62,14 +63,13 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDel
     if(!sliding)player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt);
   }
 
-  // Slide gradually loses momentum until it stops.
+  // The slide keeps moving even after CTRL is released, then smoothly loses momentum and stops.
   if(sliding){
     player.position.addScaledVector(slideVelocity,dt);
-    slideVelocity.multiplyScalar(Math.pow(0.08,dt));
-    if(slideVelocity.length()<0.45 || !crouching){sliding=false;slideVelocity.set(0,0,0)}
+    slideVelocity.multiplyScalar(Math.pow(0.07,dt));
+    if(slideVelocity.length()<0.35){sliding=false;slideVelocity.set(0,0,0)}
   }
 
-  // Lower the camera while crouching/sliding.
   const targetCameraY=(crouching||sliding)?crouchCameraY:standingCameraY;
   camera.position.y=THREE.MathUtils.lerp(camera.position.y,targetCameraY,Math.min(1,dt*14));
 
