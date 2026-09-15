@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=21" />
+  <link rel="stylesheet" href="style.css?v=22" />
+  <link rel="stylesheet" href="pause-menu.css?v=1" />
 </head>
 <body>
   <div id="game"></div>
@@ -50,8 +51,9 @@
     });
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement) menu.classList.add('menu-hidden');
-      else menu.classList.remove('menu-hidden');
+      else if (!document.querySelector('#pause-overlay')?.classList.contains('visible')) menu.classList.remove('menu-hidden');
     });
   </script>
+  <script src="pause-menu.js?v=1"></script>
 </body>
 </html>
