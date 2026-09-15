@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=23" />
+  <link rel="stylesheet" href="style.css?v=24" />
   <link rel="stylesheet" href="pause-menu.css?v=2" />
+  <style>#start-screen{display:none!important}</style>
 </head>
 <body>
   <div id="game"></div>
@@ -24,6 +25,8 @@
     <div id="menu-panel"><div id="panel-title">MARKET</div></div>
   </div>
 
+  <div id="start-screen" class="hidden" aria-hidden="true"></div>
+
   <div id="crosshair">+</div>
   <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
   <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
@@ -33,7 +36,7 @@
   <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
   <div id="error-screen" class="hidden"></div>
 
-  <script type="module" src="game.js?v=22"></script>
+  <script type="module" src="game.js?v=23"></script>
   <script>
     const menu = document.querySelector('#menu-screen');
     const character = document.querySelector('#menu-character');
@@ -46,14 +49,10 @@
       title.textContent = btn.dataset.name;
     }));
 
-    // OYNA'ya basınca doğrudan oyuna gir. Ara başlangıç ekranı yok.
     character.addEventListener('click', () => {
       menu.classList.add('menu-hidden');
       document.querySelector('#game canvas')?.requestPointerLock();
     });
-
-    // Pointer lock bırakıldığında başlangıç ekranı açma.
-    // ESC ile açılan duraklatma menüsü tek menü olarak kullanılacak.
   </script>
   <script src="pause-menu.js?v=2"></script>
 </body>
