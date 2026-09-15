@@ -22,18 +22,27 @@ const walkSpeed=8,sprintSpeed=15,crouchSpeed=4.5,slideStartSpeed=17,gravity=24,j
 let locked=false,sliding=false,slideVelocity=new THREE.Vector3(),ctrlWasDown=false;
 const standingCameraY=1.6,crouchCameraY=.9;
 
-// Grappling hook / cable
+// Grappling hook / visible cable
 const raycaster=new THREE.Raycaster();
 const grappleTargets=[];
 scene.traverse(o=>{if(o.isMesh) grappleTargets.push(o)});
-let grappleActive=false,grapplePoint=new THREE.Vector3(),grappleVelocity=new THREE.Vector3();
-let grappleLine=null,grappleHead=null;
+let grappleActive=false,grapplePoint=new THREE.Vector3();
+let grappleLine=null,grappleRope=null,grappleHead=null;
 const grappleMaterial=new THREE.LineBasicMaterial({color:0x20242a});
+const ropeMaterial=new THREE.MeshStandardMaterial({color:0x20242a,roughness:.65,metalness:.1});
 const hookMaterial=new THREE.MeshStandardMaterial({color:0x30363b,metalness:.8,roughness:.25});
 
 function makeGrappleVisual(){
+  // Thin guide line plus a thicker rope so the cable is easy to see.
   const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
   grappleLine=new THREE.Line(geo,grappleMaterial); grappleLine.frustumCulled=false; scene.add(grappleLine);
+
+  const ropeGeo=new THREE.CylinderGeometry(.035,.035,1,8);
+  grappleRope=new THREE.Mesh(ropeGeo,ropeMaterial);
+  grappleRope.frustumCulled=false;
+  grappleRope.visible=false;
+  scene.add(grappleRope);
+
   grappleHead=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.16,.045,8,18),hookMaterial);
   ring.rotation.x=Math.PI/2; grappleHead.add(ring);
@@ -48,7 +57,7 @@ function fireGrapple(){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=raycaster.intersectObjects(grappleTargets,false);
   if(!hits.length)return;
-  const hit=hits.find(h=>h.object!==grappleLine&&h.object!==grappleHead);
+  const hit=hits.find(h=>h.object!==grappleLine&&h.object!==grappleRope&&h.object!==grappleHead);
   if(!hit)return;
   grapplePoint.copy(hit.point);
   grappleActive=true;
@@ -56,7 +65,7 @@ function fireGrapple(){
   grappleHead.position.copy(grapplePoint);
   grappleHead.lookAt(camera.getWorldPosition(new THREE.Vector3()));
 }
-function cancelGrapple(){grappleActive=false;grappleHead.visible=false}
+function cancelGrapple(){grappleActive=false;grappleHead.visible=false;grappleRope.visible=false;grappleLine.visible=false}
 
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();if(e.code==='ControlLeft'||e.code==='ControlRight')e.preventDefault();if(e.code==='KeyE')fireGrapple()});
 addEventListener('keyup',e=>keys[e.code]=false);
@@ -69,6 +78,31 @@ document.addEventListener('mousedown',e=>{if(e.button===0)fireGrapple();if(e.but
 document.addEventListener('contextmenu',e=>e.preventDefault());
 
 const clock=new THREE.Clock();
+const tmpStart=new THREE.Vector3();
+const tmpMid=new THREE.Vector3();
+const tmpDir=new THREE.Vector3();
+function updateGrappleCable(){
+  if(!grappleActive)return;
+  camera.getWorldPosition(tmpStart);
+  const positions=grappleLine.geometry.attributes.position;
+  positions.setXYZ(0,tmpStart.x,tmpStart.y,tmpStart.z);
+  positions.setXYZ(1,grapplePoint.x,grapplePoint.y,grapplePoint.z);
+  positions.needsUpdate=true;
+
+  // A real 3D rope between the player and the exact point where the hook landed.
+  tmpDir.copy(grapplePoint).sub(tmpStart);
+  const distance=tmpDir.length();
+  if(distance>.001){
+    grappleRope.visible=true;
+    tmpDir.normalize();
+    tmpMid.copy(tmpStart).add(grapplePoint).multiplyScalar(.5);
+    grappleRope.position.copy(tmpMid);
+    grappleRope.scale.set(1,distance,1);
+    grappleRope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tmpDir);
+  }
+  grappleHead.position.copy(grapplePoint);
+}
+
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.033);
@@ -82,7 +116,6 @@ function animate(){
     if(sliding){player.position.addScaledVector(slideVelocity,dt);const ns=Math.max(0,slideVelocity.length()-slideFriction*dt);if(ns===0){slideVelocity.set(0,0,0);sliding=false}else slideVelocity.setLength(ns)}
     else if(dir.lengthSq()){player.position.addScaledVector(dir,(sprinting?sprintSpeed:(crouching?crouchSpeed:walkSpeed))*dt)}
 
-    // Pull the player toward the grapple point while the cable is visible.
     if(grappleActive){
       const playerWorld=camera.getWorldPosition(new THREE.Vector3());
       const toHook=grapplePoint.clone().sub(playerWorld);
@@ -105,15 +138,9 @@ function animate(){
     ctrlWasDown=crouching;
   }
 
-  if(grappleActive){
-    const startPoint=camera.getWorldPosition(new THREE.Vector3());
-    const positions=grappleLine.geometry.attributes.position;
-    positions.setXYZ(0,startPoint.x,startPoint.y,startPoint.z);
-    positions.setXYZ(1,grapplePoint.x,grapplePoint.y,grapplePoint.z);
-    positions.needsUpdate=true;
-    grappleHead.position.copy(grapplePoint);
-  }
+  updateGrappleCable();
   grappleLine.visible=grappleActive;
+  grappleRope.visible=grappleActive;
   grappleHead.visible=grappleActive;
   renderer.render(scene,camera);
 }
