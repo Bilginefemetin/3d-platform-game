@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arena Menu</title>
+  <link rel="stylesheet" href="menu.css?v=1" />
+</head>
+<body>
+  <main class="menu-shell">
+    <section class="character-stage" aria-label="Karakter">
+      <div class="character-shadow"></div>
+      <div class="character"></div>
+    </section>
+
+    <nav class="menu-tabs" aria-label="Ana menü">
+      <button data-section="market">MARKET</button>
+      <button data-section="inventory">ENVANTER</button>
+      <button data-section="ranking">SIRALAMA</button>
+      <button data-section="settings">AYARLAR</button>
+    </nav>
+
+    <section id="menu-panel" class="menu-panel" aria-live="polite">
+      <h1 id="panel-title">MARKET</h1>
+      <p>Bu alan şimdilik boş bırakıldı. İçeriği daha sonra ekleyebilirsin.</p>
+    </section>
+  </main>
+  <script src="menu.js?v=1"></script>
+</body>
+</html>
