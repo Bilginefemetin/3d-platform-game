@@ -24,15 +24,6 @@
     <div id="menu-panel"><div id="panel-title">MARKET</div></div>
   </div>
 
-  <div id="start-screen" class="hidden">
-    <div class="start-card">
-      <div class="start-kicker">3D PLATFORM ARENA</div>
-      <h1>OYUNA BAŞLA</h1>
-      <p>Devam etmek için tıkla ve oyuna gir.</p>
-      <button id="start-button">BAŞLA</button>
-    </div>
-  </div>
-
   <div id="crosshair">+</div>
   <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
   <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
@@ -42,36 +33,28 @@
   <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
   <div id="error-screen" class="hidden"></div>
 
-  <script type="module" src="game.js?v=21"></script>
+  <script type="module" src="game.js?v=22"></script>
   <script>
     const menu = document.querySelector('#menu-screen');
     const character = document.querySelector('#menu-character');
     const title = document.querySelector('#panel-title');
-    const startScreen = document.querySelector('#start-screen');
-    const startButton = document.querySelector('#start-button');
     const buttons = document.querySelectorAll('.menu-btn');
+
     buttons.forEach(btn => btn.addEventListener('click', () => {
       buttons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       title.textContent = btn.dataset.name;
     }));
+
+    // OYNA'ya basınca doğrudan oyuna gir. Ara başlangıç ekranı yok.
     character.addEventListener('click', () => {
       menu.classList.add('menu-hidden');
-      startScreen.classList.remove('hidden');
-    });
-    startButton.addEventListener('click', () => {
-      startScreen.classList.add('hidden');
       document.querySelector('#game canvas')?.requestPointerLock();
     });
-    document.addEventListener('pointerlockchange', () => {
-      if (document.pointerLockElement) {
-        menu.classList.add('menu-hidden');
-        startScreen.classList.add('hidden');
-      } else if (!document.querySelector('#pause-overlay')?.classList.contains('visible')) {
-        startScreen.classList.remove('hidden');
-      }
-    });
+
+    // Pointer lock bırakıldığında başlangıç ekranı açma.
+    // ESC ile açılan duraklatma menüsü tek menü olarak kullanılacak.
   </script>
-  <script src="pause-menu.js?v=1"></script>
+  <script src="pause-menu.js?v=2"></script>
 </body>
 </html>
