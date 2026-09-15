@@ -20,12 +20,18 @@ const eliminationBundles=[
   {type:'ELEME EFEKTİ KASASI',name:'ORTA ELEME EFEKTİ KASASI',price:20000,desc:'Eleme effekti kozmetiği'},
   {type:'ELEME EFEKTİ KASASI',name:'PAHALI ELEME EFEKTİ KASASI',price:30000,desc:'Eleme effekti kozmetiği'}
 ];
+const plasmaBundles=[
+  {type:'PLASMA SİLAHI SKİN KASASI',name:'UCUZ PLASMA SİLAHI SKİN KASASI',price:1000,desc:'Plasma silahı kozmetik kasası'},
+  {type:'PLASMA SİLAHI SKİN KASASI',name:'ORTA PLASMA SİLAHI SKİN KASASI',price:20000,desc:'Plasma silahı kozmetik kasası'},
+  {type:'PLASMA SİLAHI SKİN KASASI',name:'PAHALI PLASMA SİLAHI SKİN KASASI',price:30000,desc:'Plasma silahı kozmetik kasası'}
+];
 
 function market(){
   title.textContent='MARKET';
   content.innerHTML=`
     <div class="market-section"><div class="section-title">SKİN KASALARI</div><div class="market-row">${skinBundles.map(card).join('')}</div></div>
     <div class="market-section"><div class="section-title">ELEME EFEKTLERİ KASALARI</div><div class="market-row">${eliminationBundles.map(card).join('')}</div></div>
+    <div class="market-section"><div class="section-title">PLASMA SİLAHI SKİN KASALARI</div><div class="market-row">${plasmaBundles.map(card).join('')}</div></div>
     <p class="market-note">Kasa sistemi şimdilik sabit kozmetik paketler olarak hazır. İçerik ve efektleri sen daha sonra ekleyebilirsin.</p>`;
   content.querySelectorAll('.buy-card').forEach(btn=>btn.addEventListener('click',()=>{
     const price=Number(btn.dataset.price);
