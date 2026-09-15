@@ -25,7 +25,9 @@
   const labels = { forward:'İleri', back:'Geri', left:'Sol', right:'Sağ', jump:'Zıpla', sprint:'Koş', crouch:'Eğil / Kay', dash:'Atıl', boost:'Yukarı İtiş', wave:'Enerji Dalgası', pull:'Küreyi Çek' };
   let bindings = {...defaultMap, ...JSON.parse(localStorage.getItem('arenaBindings') || '{}')};
   let volume = Number(localStorage.getItem('arenaVolume') ?? 70);
+  let sensitivity = Number(localStorage.getItem('arenaSensitivity') ?? 1);
   window.gameMasterVolume = volume / 100;
+  window.gameMouseSensitivity = sensitivity;
 
   const keyName = code => ({Space:'SPACE',ShiftLeft:'SHIFT',ShiftRight:'SHIFT',ControlLeft:'CTRL',ControlRight:'CTRL',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'})[code] || code.replace(/^Key/,'').replace(/^Digit/,'');
   const saveBindings = () => localStorage.setItem('arenaBindings', JSON.stringify(bindings));
@@ -55,15 +57,31 @@
     detail.querySelectorAll('[data-bind]').forEach(btn => btn.onclick = () => { rebinding=btn.dataset.bind; renderControls(); });
   }
 
+  function renderSensitivity() {
+    detail.innerHTML = `<h2>HASSASİYET</h2><p class="detail-note">Fare hareket hızını ayarla.</p><label class="range-row"><span>Fare hassasiyeti</span><strong id="sensitivity-value">${sensitivity.toFixed(1)}x</strong></label><input id="sensitivity-slider" type="range" min="0.1" max="3" step="0.1" value="${sensitivity}"><button class="small-btn" id="sensitivity-reset">VARSAYILANA DÖN</button>`;
+    const slider = detail.querySelector('#sensitivity-slider');
+    slider.oninput = () => { sensitivity = Number(slider.value); window.gameMouseSensitivity = sensitivity; localStorage.setItem('arenaSensitivity', sensitivity); detail.querySelector('#sensitivity-value').textContent = sensitivity.toFixed(1)+'x'; };
+    detail.querySelector('#sensitivity-reset').onclick = () => { sensitivity=1; window.gameMouseSensitivity=1; localStorage.setItem('arenaSensitivity',1); renderSensitivity(); soundBeep(600,.05); };
+  }
+
   function showDetail(type) {
     if(type==='sound') renderSound();
     else if(type==='controls') renderControls();
+    else if(type==='sensitivity') renderSensitivity();
     else if(type==='resume') detail.innerHTML = `<p class="detail-note">Oyuna kaldığın yerden devam et.</p>`;
     else if(type==='restart') detail.innerHTML = `<h2>YENİDEN BAŞLAT</h2><p class="detail-note">Oyun baştan yüklenecek.</p><button class="confirm-btn" id="restart-confirm">YENİDEN BAŞLAT</button>`;
     else if(type==='menu') detail.innerHTML = `<h2>ANA MENÜ</h2><p class="detail-note">Ana menüye dönmek istediğine emin misin?</p><button class="confirm-btn" id="menu-confirm">ANA MENÜYE DÖN</button>`;
     detail.querySelector('#restart-confirm')?.addEventListener('click', () => location.reload());
     detail.querySelector('#menu-confirm')?.addEventListener('click', () => { location.href = 'menu/'; });
   }
+
+  // Sensitivity is shown as a separate option while keeping the original five pause actions.
+  const sensitivityButton = document.createElement('button');
+  sensitivityButton.dataset.pause = 'sensitivity';
+  sensitivityButton.className = 'pause-option';
+  sensitivityButton.textContent = 'HASSASİYET';
+  root.querySelector('.pause-options').appendChild(sensitivityButton);
+  options.push(sensitivityButton);
 
   function openPause() {
     if (pauseOpen) return;
@@ -94,13 +112,11 @@
     }
     if (!pauseOpen || !rebinding) return;
     e.preventDefault(); e.stopImmediatePropagation();
-    if (e.code === 'Escape') return;
     const used = Object.entries(bindings).find(([k,v]) => k!==rebinding && v===e.code);
     if (used) return;
     bindings[rebinding]=e.code; saveBindings(); rebinding=null; renderControls(); soundBeep(760,.07);
   }, true);
 
-  // Translate custom key bindings to the game's existing input codes.
   const physicalDown = new Set();
   document.addEventListener('keydown', e => {
     if (pauseOpen) return;
@@ -122,11 +138,6 @@
     e.preventDefault();
   }, true);
 
-  window.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && !pauseOpen) {
-      // Initial start screen is handled by the game; ESC opens our pause menu instead.
-    }
-  });
-
+  window.addEventListener('pointerlockchange', () => {});
   showDetail('resume');
 })();
