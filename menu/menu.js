@@ -42,6 +42,11 @@ function simple(section){
   else content.innerHTML='<p>Ayarlar burada olacak.</p>';
 }
 
+function closePanel(){
+  panel.style.display='none';
+  document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
+}
+
 function openPanel(section,button){
   document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
   button.classList.add('active');
@@ -50,12 +55,14 @@ function openPanel(section,button){
 }
 
 document.querySelectorAll('.menu-tabs button').forEach(button=>{
-  button.addEventListener('dblclick',()=>{
-    panel.style.display='none';
-    document.querySelectorAll('.menu-tabs button').forEach(b=>b.classList.remove('active'));
+  button.addEventListener('click',()=>{
+    if(panel.style.display==='block' && button.classList.contains('active')){
+      closePanel();
+      return;
+    }
+    openPanel(button.dataset.section,button);
   });
-  button.addEventListener('click',()=>openPanel(button.dataset.section,button));
 });
 
-// Oyun ana menüden başlar; panel açılmadan önce görünmez.
-panel.style.display='none';
+// Ana menü ilk açıldığında hiçbir panel görünmez.
+closePanel();
