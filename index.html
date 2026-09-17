@@ -3,58 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=26" />
-  <link rel="stylesheet" href="pause-menu.css?v=3" />
-  <style>#start-screen{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>
+  <title>Arena</title>
+  <meta http-equiv="refresh" content="0; url=menu/" />
+  <script>location.replace('menu/');</script>
 </head>
-<body>
-  <div id="game"></div>
-
-  <div id="menu-screen">
-    <nav class="menu-top" aria-label="Ana menü">
-      <button class="menu-btn active" data-name="MARKET">MARKET</button>
-      <button class="menu-btn" data-name="ENVANTER">ENVANTER</button>
-      <button class="menu-btn" data-name="SIRALAMA">SIRALAMA</button>
-      <button class="menu-btn" data-name="AYARLAR">AYARLAR</button>
-    </nav>
-    <button id="menu-character" aria-label="Oyuna başla">
-      <span class="character-oval" aria-hidden="true"></span>
-      <span class="play-label">OYNA</span>
-    </button>
-    <div id="menu-panel"><div id="panel-title">MARKET</div></div>
-  </div>
-
-  <div id="start-screen" class="hidden" aria-hidden="true"></div>
-
-  <div id="crosshair">+</div>
-  <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
-  <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
-  <div id="score-hud"><span>ENERJİ HEDEFLERİ</span><b id="score">0</b></div>
-  <div id="energy-hud"><span>ENERJİ</span><div class="energy-track"><div id="energy-fill"></div></div><b id="energy-value">100</b></div>
-  <div id="ability-hud">F: Enerji Dalgası &nbsp; • &nbsp; E: Yukarı İtiş &nbsp; • &nbsp; Sağ tık: Küreyi Çek &nbsp; • &nbsp; Sol tık: Enerji Işını</div>
-  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
-  <div id="error-screen" class="hidden"></div>
-
-  <script type="module" src="game.js?v=26"></script>
-  <script>
-    const menu = document.querySelector('#menu-screen');
-    const character = document.querySelector('#menu-character');
-    const title = document.querySelector('#panel-title');
-    const buttons = document.querySelectorAll('.menu-btn');
-
-    buttons.forEach(btn => btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      title.textContent = btn.dataset.name;
-    }));
-
-    character.addEventListener('click', () => {
-      menu.classList.add('menu-hidden');
-      const canvas = document.querySelector('#game canvas');
-      if (canvas) canvas.requestPointerLock();
-    });
-  </script>
-  <script src="pause-menu.js?v=3"></script>
-</body>
+<body></body>
 </html>
