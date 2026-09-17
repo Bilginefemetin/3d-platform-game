@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Platform Arena</title>
+  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="pause-menu.css?v=4" />
+</head>
+<body>
+  <div id="game"></div>
+
+  <div id="start-screen" class="hidden" aria-hidden="true"></div>
+
+  <div id="crosshair">+</div>
+  <div id="dash-meter" aria-label="Atılma hakkı"><div class="dash-bar"></div><div class="dash-bar"></div><div class="dash-bar"></div></div>
+  <div id="boost-meter" aria-label="Yukarı itiş hakkı"><div class="boost-bar"></div><div class="boost-bar"></div><div class="boost-bar"></div></div>
+  <div id="score-hud"><span>ENERJİ HEDEFLERİ</span><b id="score">0</b></div>
+  <div id="energy-hud"><span>ENERJİ</span><div class="energy-track"><div id="energy-fill"></div></div><b id="energy-value">100</b></div>
+  <div id="ability-hud">F: Enerji Dalgası &nbsp; • &nbsp; E: Yukarı İtiş &nbsp; • &nbsp; Sağ tık: Küreyi Çek &nbsp; • &nbsp; Sol tık: Enerji Işını</div>
+  <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
+  <div id="error-screen" class="hidden"></div>
+
+  <script type="module" src="game.js?v=27"></script>
+  <script>
+    // Ana menüden geldikten sonra ayrı bir "oynamak için tıkla" ekranı yok.
+    // İlk tıklama doğrudan fare kilidini açar.
+    window.addEventListener('click', () => {
+      document.querySelector('#game canvas')?.requestPointerLock();
+    }, { once: true });
+  </script>
+  <script src="pause-menu.js?v=4"></script>
+</body>
+</html>
