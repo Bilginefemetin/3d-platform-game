@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Platform Arena</title>
-  <link rel="stylesheet" href="style.css?v=25" />
+  <link rel="stylesheet" href="style.css?v=26" />
   <link rel="stylesheet" href="pause-menu.css?v=3" />
   <style>#start-screen{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>
 </head>
@@ -19,13 +19,12 @@
       <button class="menu-btn" data-name="AYARLAR">AYARLAR</button>
     </nav>
     <button id="menu-character" aria-label="Oyuna başla">
-      <span class="character-oval"></span>
+      <span class="character-oval" aria-hidden="true"></span>
       <span class="play-label">OYNA</span>
     </button>
     <div id="menu-panel"><div id="panel-title">MARKET</div></div>
   </div>
 
-  <!-- Eski start-screen kodunun hata vermemesi için gizli uyumluluk elemanı. Oyuncuya gösterilmez. -->
   <div id="start-screen" class="hidden" aria-hidden="true"></div>
 
   <div id="crosshair">+</div>
@@ -37,13 +36,12 @@
   <div id="hint">WASD hareket • Shift koş • Ctrl eğil/kay • Space çift zıpla • Q atıl • E yukarı itiş • F enerji dalgası • Sağ tık küreyi çek • Sol tık enerji ışını</div>
   <div id="error-screen" class="hidden"></div>
 
-  <script type="module" src="game.js?v=24"></script>
+  <script type="module" src="game.js?v=26"></script>
   <script>
     const menu = document.querySelector('#menu-screen');
     const character = document.querySelector('#menu-character');
     const title = document.querySelector('#panel-title');
     const buttons = document.querySelectorAll('.menu-btn');
-    const startScreen = document.querySelector('#start-screen');
 
     buttons.forEach(btn => btn.addEventListener('click', () => {
       buttons.forEach(b => b.classList.remove('active'));
@@ -53,10 +51,6 @@
 
     character.addEventListener('click', () => {
       menu.classList.add('menu-hidden');
-      startScreen.classList.add('hidden');
-      startScreen.style.display = 'none';
-      startScreen.style.visibility = 'hidden';
-      startScreen.style.pointerEvents = 'none';
       const canvas = document.querySelector('#game canvas');
       if (canvas) canvas.requestPointerLock();
     });
