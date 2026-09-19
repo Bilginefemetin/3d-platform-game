@@ -10,12 +10,12 @@
 #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:27px;font-weight:900;text-shadow:0 2px 8px #000}
 #weapon{position:absolute;right:18px;bottom:68px;padding:10px 14px;border-radius:12px;background:rgba(4,9,16,.7);font-weight:900;text-align:right}
 #help{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:9px 14px;border-radius:11px;background:rgba(4,9,16,.8);font-size:12px;color:#d5deea;text-align:center}
-#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:1000;text-align:center;text-shadow:0 5px 30px #000;display:none}
+#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:1000;text-align:center;text-shadow:0 5px 30px #000;display:none}#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(18,38,62,.72),rgba(2,6,12,.96));z-index:20}#menuBox{width:min(440px,90vw);padding:34px;border:1px solid rgba(255,255,255,.16);border-radius:22px;background:rgba(5,10,18,.88);backdrop-filter:blur(14px);text-align:center;box-shadow:0 25px 80px rgba(0,0,0,.45)}#menuTitle{font-size:46px;font-weight:1000;margin-bottom:8px}#menuSub{color:#b9c7d8;margin-bottom:25px}.menuBtn{display:block;width:100%;margin:10px 0;font-size:16px;background:#eaf2ff;color:#07101b}.menuBtn.secondary{background:#1b2a3b;color:#fff}
 button{pointer-events:auto;border:0;border-radius:11px;padding:10px 17px;font-weight:800;cursor:pointer}
 #damageFlash{position:fixed;inset:0;background:rgba(255,40,50,.18);opacity:0;pointer-events:none}
 </style></head>
 <body>
-<div id="game"></div><div id="damageFlash"></div>
+<div id="game"></div><div id="damageFlash"></div><div id="menu"><div id="menuBox"><div id="menuTitle">MELEE ARENA</div><div id="menuSub">Tek kişilik savaş alanı</div><button class="menuBtn" id="playBtn">OYUNA BAŞLA</button><button class="menuBtn secondary" id="menuControls">KONTROLLER</button></div></div>
 <div id="hud">
  <div class="card left"><div class="name">⚔️ OYUNCU</div><div class="bar"><div id="hp" class="fill blue"></div></div><div class="small" id="info"></div></div>
  <div id="score">Rakip: 0</div><div id="cross">+</div><div id="weapon"></div>
@@ -69,9 +69,9 @@ function playerAttack(){const w=weapons[currentWeapon];if(player.attackCd>0||pla
  const to=new THREE.Vector3(enemy.pos.x-player.pos.x,0,enemy.pos.z-player.pos.z),dist=to.length();if(dist>w.range)return;to.normalize();const ang=Math.acos(THREE.MathUtils.clamp(forward(player.yaw).dot(to),-1,1));if(ang<=w.arc)enemy.hp=Math.max(0,enemy.hp-w.damage);if(enemy.hp===0)end(true)}
 function enemyAttack(){const w=weapons[enemy.weapon];if(enemy.attackCd>0||enemy.hp<=0)return;enemy.attackCd=w.cool;enemy.attackAnim=.22/w.speed;const to=new THREE.Vector3(player.pos.x-enemy.pos.x,0,player.pos.z-enemy.pos.z),dist=to.length();if(dist<=w.range){to.normalize();const ang=Math.acos(THREE.MathUtils.clamp(forward(enemy.yaw).dot(to),-1,1));if(ang<=w.arc)damagePlayer(w.damage)}}
 
-let running=true;
-function end(win){running=false;document.querySelector('#message').style.display='block';document.querySelector('#message').innerHTML=(win?'🏆 RAKİP YENİLDİ!':'💀 YENİLDİN!')+'<br><button id="restart">YENİ RAUNT</button>';document.querySelector('#restart').onclick=reset}
-function reset(){player.pos.set(0,1.2,19);player.hp=100;player.dashes=2;enemy.pos.set(0,1.2,-18);enemy.hp=100;enemy.attackCd=0;running=true;document.querySelector('#message').style.display='none'}
+let running=false;
+function end(win){running=false;document.exitPointerLock?.();document.querySelector('#message').style.display='block';document.querySelector('#message').innerHTML=(win?'🏆 RAKİP YENİLDİ!':'💀 YENİLDİN!')+'<br><button id="restart">YENİ RAUNT</button>';document.querySelector('#restart').onclick=reset}
+function reset(){player.pos.set(0,1.2,19);player.hp=100;player.dashes=2;player.attackCd=0;enemy.pos.set(0,1.2,-18);enemy.hp=100;enemy.attackCd=0;running=true;document.querySelector('#message').style.display='none';document.querySelector('#menu').style.display='none';updateHud()}
 function dash(){if(player.dashes<=0||player.dashCd>0)return;player.dashes--;player.dashCd=.55;player.pos.addScaledVector(forward(player.yaw),5.5);player.pos.x=THREE.MathUtils.clamp(player.pos.x,-31,31);player.pos.z=THREE.MathUtils.clamp(player.pos.z,-21,21)}
 
 function movePlayer(dt){let v=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyW?1:0)-(keys.KeyS?1:0));if(v.lengthSq()){v.normalize();const f=forward(player.yaw),r=new THREE.Vector3(Math.cos(player.yaw),0,Math.sin(player.yaw));v=f.multiplyScalar(v.z).add(r.multiplyScalar(v.x));player.pos.addScaledVector(v,(keys.ShiftLeft||keys.ShiftRight?16:10)*dt)}player.pos.x=THREE.MathUtils.clamp(player.pos.x,-31,31);player.pos.z=THREE.MathUtils.clamp(player.pos.z,-21,21);if(keys.Space&&!player.spaceHeld){dash();player.spaceHeld=true}if(!keys.Space)player.spaceHeld=false;if(mouseDown&&!player.mouseHeld){playerAttack();player.mouseHeld=true}if(!mouseDown)player.mouseHeld=false;player.attackCd=Math.max(0,player.attackCd-dt);player.dashCd=Math.max(0,player.dashCd-dt);if(player.dashes<2&&player.dashCd===0)player.dashes=2}
@@ -80,6 +80,6 @@ function updateCamera(){camera.position.copy(player.pos);camera.position.y=playe
 function updateEnemyView(){enemyView.group.position.copy(enemy.pos);enemyView.group.rotation.y=enemy.yaw}
 function updateWeaponAnim(dt){const w=hand.children[0];if(player.attackAnim>0){player.attackAnim-=dt;const t=Math.max(0,player.attackAnim/(.22/weapons[currentWeapon].speed));w.rotation.z=-.22-1.15*(1-t);w.rotation.x=-.25+.8*(1-t)}else{w.rotation.z=THREE.MathUtils.lerp(w.rotation.z,-.22,.22);w.rotation.x=THREE.MathUtils.lerp(w.rotation.x,-.25,.22)}}
 function updateHud(){const w=weapons[currentWeapon];document.querySelector('#hp').style.width=player.hp+'%';document.querySelector('#info').innerHTML='<b>'+w.name+'</b> · Hasar '+w.damage+' · Menzil '+w.range+'<br>Atılma: '+player.dashes+'/2';document.querySelector('#weapon').textContent='⚔️ '+w.name;document.querySelector('#score').textContent='RAKİP CANI: '+enemy.hp}
-let last=performance.now();function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.033);last=now;if(running){movePlayer(dt);moveEnemy(dt);updateCamera();updateEnemyView();updateWeaponAnim(dt);updateHud()}renderer.render(scene,camera)}animate(performance.now());
+let last=performance.now();function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.033);last=now;if(running){movePlayer(dt);moveEnemy(dt);updateCamera();updateEnemyView();updateWeaponAnim(dt);updateHud()}renderer.render(scene,camera)}document.querySelector('#playBtn').onclick=()=>reset();document.querySelector('#menuControls').onclick=()=>alert('WASD: hareket\nMouse: kamera\nSol tık: saldırı\nShift: koş\nSpace: atılma\n1 / 2 / 3: silah değiştir');animate(performance.now());
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script></body></html>
