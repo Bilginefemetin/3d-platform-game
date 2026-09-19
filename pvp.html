@@ -1,260 +1,85 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PVP Arena - Melee</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Melee Arena</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050a12;font-family:Inter,system-ui,Arial;color:#fff}
-#game{position:fixed;inset:0}canvas{display:block}
-#hud{position:fixed;inset:0;pointer-events:none}
-.card{position:absolute;top:12px;width:280px;padding:11px 14px;background:rgba(4,9,16,.78);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px}
-#p1{left:12px}#p2{right:12px;text-align:right}
-.name{font-weight:900;font-size:17px}.bar{height:11px;background:#18212d;border-radius:99px;overflow:hidden;margin-top:7px}.fill{height:100%;width:100%;transition:width .12s}.blue{background:#32a8ff}.red{background:#ff4d67}
-.small{font-size:12px;color:#cbd5e1;line-height:1.6}
-#score{position:absolute;top:13px;left:50%;transform:translateX(-50%);font-size:27px;font-weight:1000;text-shadow:0 3px 18px #000}
-#cross1,#cross2{position:absolute;top:50%;font-size:30px;font-weight:900;text-shadow:0 2px 8px #000;transform:translateY(-50%);display:none}
-#cross1{left:25%}#cross2{left:75%}
-#split{position:absolute;left:50%;top:0;bottom:0;width:3px;background:rgba(255,255,255,.45);box-shadow:0 0 12px rgba(255,255,255,.35)}
-#help{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);padding:8px 13px;border-radius:11px;background:rgba(4,9,16,.78);font-size:12px;color:#d5deea;text-align:center}
-#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:1000;text-align:center;text-shadow:0 5px 30px #000;display:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050a12;font-family:Inter,system-ui,Arial;color:#fff}#game{position:fixed;inset:0}canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}.card{position:absolute;top:14px;width:290px;padding:12px 15px;background:rgba(4,9,16,.76);backdrop-filter:blur(9px);border:1px solid rgba(255,255,255,.14);border-radius:14px}.card.left{left:14px}.name{font-weight:900;font-size:18px}.bar{height:12px;background:#18212d;border-radius:99px;overflow:hidden;margin-top:7px}.fill{height:100%;width:100%;transition:width .12s}.blue{background:#32a8ff}.red{background:#ff4d67}.small{font-size:12px;color:#d2dbe7;line-height:1.65}
+#score{position:absolute;top:15px;right:16px;font-size:18px;font-weight:900;text-shadow:0 3px 15px #000}
+#cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:27px;font-weight:900;text-shadow:0 2px 8px #000}
+#weapon{position:absolute;right:18px;bottom:68px;padding:10px 14px;border-radius:12px;background:rgba(4,9,16,.7);font-weight:900;text-align:right}
+#help{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:9px 14px;border-radius:11px;background:rgba(4,9,16,.8);font-size:12px;color:#d5deea;text-align:center}
+#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:1000;text-align:center;text-shadow:0 5px 30px #000;display:none}
 button{pointer-events:auto;border:0;border-radius:11px;padding:10px 17px;font-weight:800;cursor:pointer}
-#restart{margin-top:14px}
-.weapon{font-weight:900}
-</style>
-</head>
+#damageFlash{position:fixed;inset:0;background:rgba(255,40,50,.18);opacity:0;pointer-events:none}
+</style></head>
 <body>
-<div id="game"></div>
+<div id="game"></div><div id="damageFlash"></div>
 <div id="hud">
- <div id="p1" class="card"><div class="name">🔵 OYUNCU 1</div><div class="bar"><div id="hp1" class="fill blue"></div></div><div class="small" id="info1"></div></div>
- <div id="p2" class="card"><div class="name">🔴 OYUNCU 2</div><div class="bar"><div id="hp2" class="fill red"></div></div><div class="small" id="info2"></div></div>
- <div id="score">0 - 0</div>
- <div id="cross1">+</div><div id="cross2">+</div><div id="split"></div>
- <div id="help">P1: WASD · F saldır · G atıl · 1 Kılıç · 2 Balta · 3 Hançer &nbsp; | &nbsp; P2: Oklar · L saldır · K atıl · 8 Kılıç · 9 Balta · 0 Hançer</div>
+ <div class="card left"><div class="name">⚔️ OYUNCU</div><div class="bar"><div id="hp" class="fill blue"></div></div><div class="small" id="info"></div></div>
+ <div id="score">Rakip: 0</div><div id="cross">+</div><div id="weapon"></div>
+ <div id="help">WASD hareket · Mouse bakış · Sol tık saldır · Shift koş · Space atılma · 1 Kılıç · 2 Balta · 3 Hançer</div>
  <div id="message"></div>
 </div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x081321);
-scene.fog=new THREE.Fog(0x081321,22,90);
-
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;
-renderer.autoClear=false;
-document.querySelector('#game').appendChild(renderer.domElement);
-
-scene.add(new THREE.HemisphereLight(0xc9e7ff,0x121a27,2.2));
-const sun=new THREE.DirectionalLight(0xffffff,2.5);
-sun.position.set(10,32,12);sun.castShadow=true;scene.add(sun);
-
-function box(x,y,z,w,h,d,color){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.68}));
- m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
-}
-box(0,-1,0,70,2,52,0x182333);
-for(const [x,z,w,d] of [[0,-25,70,2],[0,25,70,2],[-35,0,2,52],[35,0,2,52]])box(x,3,z,w,8,d,0x26374a);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x081321);scene.fog=new THREE.Fog(0x081321,18,85);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.querySelector('#game').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xc9e7ff,0x121a27,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(10,32,12);sun.castShadow=true;scene.add(sun);
+function box(x,y,z,w,h,d,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.68}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m)}
+box(0,-1,0,70,2,52,0x182333);for(const [x,z,w,d] of [[0,-25,70,2],[0,25,70,2],[-35,0,2,52],[35,0,2,52]])box(x,3,z,w,8,d,0x26374a);
 for(const p of [[0,0,0,12,2,5],[-20,1,-7,8,2,7],[20,1,7,8,2,7],[0,2,15,7,2,5],[0,2,-15,7,2,5]])box(...p,0x31465d);
 
-const keys={};
-addEventListener('keydown',e=>{keys[e.code]=true;handleWeaponKeys(e.code)});
+const keys={};let mouseDown=false;
+addEventListener('keydown',e=>{keys[e.code]=true;if(['Digit1','Digit2','Digit3'].includes(e.code))switchWeapon(+e.code.slice(-1))});
 addEventListener('keyup',e=>keys[e.code]=false);
+renderer.domElement.addEventListener('mousedown',()=>{mouseDown=true;renderer.domElement.requestPointerLock?.()});
+addEventListener('mouseup',()=>mouseDown=false);
+addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0025;player.pitch=THREE.MathUtils.clamp(player.pitch-e.movementY*.0025,-1.35,1.35)}});
 
-const weaponData={
- sword:{name:'KILIÇ',damage:24,range:3.1,arc:1.15,cool:.48,color:0xdfe8f2,type:'sword'},
- axe:{name:'BALTA',damage:42,range:2.75,arc:.82,cool:1.05,color:0xb8c1ca,type:'axe'},
- dagger:{name:'HANÇER',damage:15,range:2.35,arc:.55,cool:.22,color:0x9ee8ff,type:'dagger'}
+const weapons={
+ sword:{name:'KILIÇ',damage:24,range:3.2,arc:1.05,cool:.42,color:0xdfe8f2,kind:'sword',speed:1},
+ axe:{name:'BALTA',damage:44,range:2.75,arc:.72,cool:.95,color:0xb8c1ca,kind:'axe',speed:.72},
+ dagger:{name:'HANÇER',damage:14,range:2.35,arc:.5,cool:.18,color:0x9ee8ff,kind:'dagger',speed:1.35}
 };
+let currentWeapon='sword';
 
-const players=[
- {id:1,pos:new THREE.Vector3(-22,1.2,0),color:0x32a8ff,hp:100,score:0,dashes:2,dashCd:0,attackCd:0,hitCd:0,keys:['KeyW','KeyS','KeyA','KeyD'],attack:'KeyF',dash:'KeyG',rot:Math.PI/2,weapon:'sword',held:false},
- {id:2,pos:new THREE.Vector3(22,1.2,0),color:0xff4d67,hp:100,score:0,dashes:2,dashCd:0,attackCd:0,hitCd:0,keys:['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'],attack:'KeyL',dash:'KeyK',rot:-Math.PI/2,weapon:'sword',held:false}
-];
+const player={pos:new THREE.Vector3(0,1.2,19),yaw:Math.PI,pitch:0,hp:100,attackCd:0,dashCd:0,dashes:2,score:0,attackAnim:0};
+const enemy={pos:new THREE.Vector3(0,1.2,-18),yaw:0,pitch:0,hp:100,attackCd:0,hitCd:0,weapon:'sword',aiTimer:0,attackAnim:0};
 
-function makeBody(p){
- const g=new THREE.Group();g.position.copy(p.pos);
- const body=new THREE.Mesh(new THREE.CapsuleGeometry(1.05,1.3,6,12),new THREE.MeshStandardMaterial({color:p.color,roughness:.42}));
- body.castShadow=true;g.add(body);
- const visor=new THREE.Mesh(new THREE.BoxGeometry(.95,.35,.22),new THREE.MeshStandardMaterial({color:0x07101b,metalness:.7,roughness:.2}));
- visor.position.set(0,.45,-.9);g.add(visor);
- const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,.06,8,24),new THREE.MeshBasicMaterial({color:p.color,transparent:true,opacity:.7}));
- ring.rotation.x=Math.PI/2;ring.position.y=-1.05;g.add(ring);
- scene.add(g);p.mesh=g;p.body=body;
-}
+function body(color){const g=new THREE.Group();const b=new THREE.Mesh(new THREE.CapsuleGeometry(1.05,1.3,6,12),new THREE.MeshStandardMaterial({color,roughness:.42}));b.castShadow=true;g.add(b);const v=new THREE.Mesh(new THREE.BoxGeometry(.95,.35,.22),new THREE.MeshStandardMaterial({color:0x07101b,metalness:.7,roughness:.2}));v.position.set(0,.45,-.9);g.add(v);scene.add(g);return {group:g,body:b}}
+const enemyView=body(0xff4d67);
 
-function weaponMesh(data){
- const g=new THREE.Group();
- if(data.type==='sword'){
-   const blade=new THREE.Mesh(new THREE.BoxGeometry(.16,1.9,.08),new THREE.MeshStandardMaterial({color:data.color,metalness:.75,roughness:.2}));
-   blade.position.y=.95;g.add(blade);
-   const guard=new THREE.Mesh(new THREE.BoxGeometry(.8,.1,.13),new THREE.MeshStandardMaterial({color:0x8b6b35,metalness:.6}));
-   guard.position.y=-.05;g.add(guard);
-   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.65,10),new THREE.MeshStandardMaterial({color:0x4a2d20}));
-   grip.position.y=-.4;g.add(grip);
- }else if(data.type==='axe'){
-   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.9,10),new THREE.MeshStandardMaterial({color:0x633d25}));
-   handle.rotation.z=.15;handle.position.y=.75;g.add(handle);
-   const head=new THREE.Mesh(new THREE.BoxGeometry(.85,.7,.16),new THREE.MeshStandardMaterial({color:data.color,metalness:.7,roughness:.25}));
-   head.position.set(.25,1.5,0);head.rotation.z=-.28;g.add(head);
- }else{
-   const blade=new THREE.Mesh(new THREE.ConeGeometry(.16,.95,4),new THREE.MeshStandardMaterial({color:data.color,metalness:.8,roughness:.18}));
-   blade.rotation.z=-Math.PI/2;blade.position.x=.55;g.add(blade);
-   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.55,10),new THREE.MeshStandardMaterial({color:0x3b251c}));
-   grip.rotation.z=Math.PI/2;grip.position.x=-.08;g.add(grip);
- }
- return g;
-}
+const camera=new THREE.PerspectiveCamera(78,innerWidth/innerHeight,.08,120);scene.add(camera);
+const hand=new THREE.Group();camera.add(hand);
 
-players.forEach(p=>{makeBody(p);p.weaponView=weaponMesh(weaponData[p.weapon]);});
+function makeWeapon(data){const g=new THREE.Group();
+ if(data.kind==='sword'){const blade=new THREE.Mesh(new THREE.BoxGeometry(.14,1.85,.09),new THREE.MeshStandardMaterial({color:data.color,metalness:.8,roughness:.18}));blade.position.y=.92;g.add(blade);const guard=new THREE.Mesh(new THREE.BoxGeometry(.75,.1,.14),new THREE.MeshStandardMaterial({color:0x8b6b35,metalness:.6}));guard.position.y=-.04;g.add(guard);const grip=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.62,10),new THREE.MeshStandardMaterial({color:0x4a2d20}));grip.position.y=-.39;g.add(grip)}
+ else if(data.kind==='axe'){const h=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.9,10),new THREE.MeshStandardMaterial({color:0x633d25}));h.rotation.z=.12;h.position.y=.7;g.add(h);const head=new THREE.Mesh(new THREE.BoxGeometry(.9,.68,.16),new THREE.MeshStandardMaterial({color:data.color,metalness:.72,roughness:.2}));head.position.set(.25,1.45,0);head.rotation.z=-.28;g.add(head)}
+ else{const blade=new THREE.Mesh(new THREE.ConeGeometry(.15,.9,4),new THREE.MeshStandardMaterial({color:data.color,metalness:.8,roughness:.15}));blade.rotation.z=-Math.PI/2;blade.position.x=.52;g.add(blade);const grip=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.52,10),new THREE.MeshStandardMaterial({color:0x3b251c}));grip.rotation.z=Math.PI/2;grip.position.x=-.1;g.add(grip)}
+ g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g}
+function switchWeapon(n){currentWeapon=n===1?'sword':n===2?'axe':'dagger';hand.clear();const w=makeWeapon(weapons[currentWeapon]);w.position.set(.7,-.62,-1.05);w.rotation.set(-.25,0,-.22);hand.add(w);player.attackAnim=0;updateHud()}
+switchWeapon(1);
 
-const cameras=[
- new THREE.PerspectiveCamera(78,1,.08,120),
- new THREE.PerspectiveCamera(78,1,.08,120)
-];
+function forward(yaw){return new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw))}
+function damagePlayer(n){if(player.hp<=0)return;player.hp=Math.max(0,player.hp-n);document.querySelector('#damageFlash').style.opacity=.7;setTimeout(()=>document.querySelector('#damageFlash').style.opacity=0,80);if(player.hp===0)end(false)}
+function playerAttack(){const w=weapons[currentWeapon];if(player.attackCd>0||player.hp<=0)return;player.attackCd=w.cool;player.attackAnim=.22/w.speed;
+ const to=new THREE.Vector3(enemy.pos.x-player.pos.x,0,enemy.pos.z-player.pos.z),dist=to.length();if(dist>w.range)return;to.normalize();const ang=Math.acos(THREE.MathUtils.clamp(forward(player.yaw).dot(to),-1,1));if(ang<=w.arc)enemy.hp=Math.max(0,enemy.hp-w.damage);if(enemy.hp===0)end(true)}
+function enemyAttack(){const w=weapons[enemy.weapon];if(enemy.attackCd>0||enemy.hp<=0)return;enemy.attackCd=w.cool;enemy.attackAnim=.22/w.speed;const to=new THREE.Vector3(player.pos.x-enemy.pos.x,0,player.pos.z-enemy.pos.z),dist=to.length();if(dist<=w.range){to.normalize();const ang=Math.acos(THREE.MathUtils.clamp(forward(enemy.yaw).dot(to),-1,1));if(ang<=w.arc)damagePlayer(w.damage)}}
 
-function handleWeaponKeys(code){
- if(code==='Digit1')players[0].weapon='sword';
- if(code==='Digit2')players[0].weapon='axe';
- if(code==='Digit3')players[0].weapon='dagger';
- if(code==='Digit8')players[1].weapon='sword';
- if(code==='Digit9')players[1].weapon='axe';
- if(code==='Digit0')players[1].weapon='dagger';
- updateWeaponViews();
-}
+let running=true;
+function end(win){running=false;document.querySelector('#message').style.display='block';document.querySelector('#message').innerHTML=(win?'🏆 RAKİP YENİLDİ!':'💀 YENİLDİN!')+'<br><button id="restart">YENİ RAUNT</button>';document.querySelector('#restart').onclick=reset}
+function reset(){player.pos.set(0,1.2,19);player.hp=100;player.dashes=2;enemy.pos.set(0,1.2,-18);enemy.hp=100;enemy.attackCd=0;running=true;document.querySelector('#message').style.display='none'}
+function dash(){if(player.dashes<=0||player.dashCd>0)return;player.dashes--;player.dashCd=.55;player.pos.addScaledVector(forward(player.yaw),5.5);player.pos.x=THREE.MathUtils.clamp(player.pos.x,-31,31);player.pos.z=THREE.MathUtils.clamp(player.pos.z,-21,21)}
 
-function updateWeaponViews(){
- players.forEach((p,i)=>{
-   if(p.weaponView)scene.remove(p.weaponView);
-   p.weaponView=weaponMesh(weaponData[p.weapon]);
-   p.weaponView.traverse(o=>{if(o.isMesh)o.castShadow=true});
-   cameras[i].add(p.weaponView);
-   p.weaponView.position.set(.72,-.65,-1.05);
-   p.weaponView.rotation.set(-.25,0,-.22);
- });
-}
-players.forEach((p,i)=>{cameras[i].add(new THREE.AmbientLight(p.color,.18));scene.add(cameras[i]);});
-updateWeaponViews();
-
-function attack(p){
- const data=weaponData[p.weapon];
- if(p.attackCd>0||p.hp<=0)return;
- p.attackCd=data.cool;
- p.attackAnim=.22;
- const target=players[p.id===1?1:0];
- const toTarget=new THREE.Vector3(target.pos.x-p.pos.x,0,target.pos.z-p.pos.z);
- const dist=toTarget.length();
- if(dist>data.range)return;
- toTarget.normalize();
- const facing=new THREE.Vector3(Math.sin(p.rot),0,Math.cos(p.rot));
- const angle=Math.acos(THREE.MathUtils.clamp(facing.dot(toTarget),-1,1));
- if(angle<=data.arc)damage(target,data.damage);
-}
-
-function damage(p,n){
- if(p.hitCd>0||p.hp<=0)return;
- p.hp=Math.max(0,p.hp-n);p.hitCd=.12;
- p.body.scale.set(1.15,.85,1.15);
- setTimeout(()=>p.body?.scale.set(1,1,1),90);
- if(p.hp===0){
-   const winner=players[p.id===1?1:0];
-   winner.score++;updateScore();endRound(winner);
- }
-}
-
-function dash(p){
- if(p.dashes<=0||p.dashCd>0||p.hp<=0)return;
- p.dashes--;p.dashCd=.55;
- const d=new THREE.Vector3(Math.sin(p.rot),0,Math.cos(p.rot));
- p.pos.addScaledVector(d,6);
- p.pos.x=THREE.MathUtils.clamp(p.pos.x,-31,31);
- p.pos.z=THREE.MathUtils.clamp(p.pos.z,-21,21);
-}
-
-function endRound(winner){
- running=false;
- message.style.display='block';
- message.innerHTML=(winner.id===1?'🔵 OYUNCU 1':'🔴 OYUNCU 2')+' KAZANDI!<br><button id="restart">YENİ RAUNT</button>';
- document.querySelector('#restart').onclick=resetRound;
-}
-
-function resetRound(){
- players[0].pos.set(-22,1.2,0);players[0].rot=Math.PI/2;
- players[1].pos.set(22,1.2,0);players[1].rot=-Math.PI/2;
- players.forEach(p=>{p.hp=100;p.dashes=2;p.dashCd=0;p.attackCd=0;p.hitCd=0;p.attackAnim=0});
- message.style.display='none';running=true;
-}
-
-function updateScore(){score.textContent=players[0].score+' - '+players[1].score}
-
-function move(p,dt){
- const [up,down,left,right]=p.keys;
- const v=new THREE.Vector3((keys[right]?1:0)-(keys[left]?1:0),0,(keys[down]?1:0)-(keys[up]?1:0));
- if(v.lengthSq()){
-   v.normalize();
-   p.pos.addScaledVector(v,10.5*dt);
-   p.rot=Math.atan2(v.x,v.z);
- }
- p.pos.x=THREE.MathUtils.clamp(p.pos.x,-31,31);
- p.pos.z=THREE.MathUtils.clamp(p.pos.z,-21,21);
- p.mesh.position.copy(p.pos);
- p.mesh.rotation.y=p.rot;
- if(keys[p.attack]&&!p.held){attack(p);p.held=true}else if(!keys[p.attack])p.held=false;
- if(keys[p.dash]&&!p.dashHeld){dash(p);p.dashHeld=true}else if(!keys[p.dash])p.dashHeld=false;
- p.attackCd=Math.max(0,p.attackCd-dt);
- p.dashCd=Math.max(0,p.dashCd-dt);
- p.hitCd=Math.max(0,p.hitCd-dt);
- if(p.dashes<2&&p.dashCd===0)p.dashes=2;
- if(p.attackAnim>0){
-   p.attackAnim-=dt;
-   const w=p.weaponView;
-   w.rotation.z=-.22-(.9*(p.attackAnim/.22));
-   if(p.attackAnim<=0)w.rotation.z=-.22;
- }
-}
-
-function updateCameras(){
- players.forEach((p,i)=>{
-   const cam=cameras[i];
-   const forward=new THREE.Vector3(Math.sin(p.rot),0,Math.cos(p.rot));
-   cam.position.set(p.pos.x,p.pos.y+1.05,p.pos.z);
-   cam.lookAt(p.pos.x+forward.x*10,p.pos.y+1.0,p.pos.z+forward.z*10);
- });
-}
-
-function hud(){
- hp1.style.width=players[0].hp+'%';hp2.style.width=players[1].hp+'%';
- const w1=weaponData[players[0].weapon],w2=weaponData[players[1].weapon];
- info1.innerHTML='<span class="weapon">'+w1.name+'</span> · Hasar '+w1.damage+' · '+(players[0].attackCd>0?'Bekle '+players[0].attackCd.toFixed(1)+' sn':'Hazır')+'<br>Atılma: '+players[0].dashes+'/2';
- info2.innerHTML='<span class="weapon">'+w2.name+'</span> · Hasar '+w2.damage+' · '+(players[1].attackCd>0?'Bekle '+players[1].attackCd.toFixed(1)+' sn':'Hazır')+'<br>Atılma: '+players[1].dashes+'/2';
- cross1.style.display='block';cross2.style.display='block';
-}
-
-const hp1=document.querySelector('#hp1'),hp2=document.querySelector('#hp2'),info1=document.querySelector('#info1'),info2=document.querySelector('#info2'),score=document.querySelector('#score'),message=document.querySelector('#message'),cross1=document.querySelector('#cross1'),cross2=document.querySelector('#cross2');
-let running=true,last=performance.now();
-
-function animate(now){
- requestAnimationFrame(animate);
- const dt=Math.min((now-last)/1000,.033);last=now;
- if(running){players.forEach(p=>move(p,dt));updateCameras();hud();}
- renderer.setScissorTest(true);
- renderer.setViewport(0,0,innerWidth/2,innerHeight);
- renderer.setScissor(0,0,innerWidth/2,innerHeight);
- renderer.render(scene,cameras[0]);
- renderer.setViewport(innerWidth/2,0,innerWidth/2,innerHeight);
- renderer.setScissor(innerWidth/2,0,innerWidth/2,innerHeight);
- renderer.render(scene,cameras[1]);
- renderer.setScissorTest(false);
-}
-updateScore();updateCameras();animate(performance.now());
-
-addEventListener('resize',()=>{
- renderer.setSize(innerWidth,innerHeight);
- cameras.forEach(c=>{c.aspect=(innerWidth/2)/innerHeight;c.updateProjectionMatrix()});
-});
-cameras.forEach(c=>{c.aspect=(innerWidth/2)/innerHeight;c.updateProjectionMatrix()});
-</script>
-</body>
-</html>
+function movePlayer(dt){let v=new THREE.Vector3((keys.KeyD?1:0)-(keys.KeyA?1:0),0,(keys.KeyS?1:0)-(keys.KeyW?1:0));if(v.lengthSq()){v.normalize();const f=forward(player.yaw),r=new THREE.Vector3(Math.cos(player.yaw),0,-Math.sin(player.yaw));v=f.multiplyScalar(v.z).add(r.multiplyScalar(v.x));player.pos.addScaledVector(v,(keys.ShiftLeft||keys.ShiftRight?16:10)*dt)}player.pos.x=THREE.MathUtils.clamp(player.pos.x,-31,31);player.pos.z=THREE.MathUtils.clamp(player.pos.z,-21,21);if(keys.Space&&!player.spaceHeld){dash();player.spaceHeld=true}if(!keys.Space)player.spaceHeld=false;if(mouseDown&&!player.mouseHeld){playerAttack();player.mouseHeld=true}if(!mouseDown)player.mouseHeld=false;player.attackCd=Math.max(0,player.attackCd-dt);player.dashCd=Math.max(0,player.dashCd-dt);if(player.dashes<2&&player.dashCd===0)player.dashes=2}
+function moveEnemy(dt){const to=new THREE.Vector3(player.pos.x-enemy.pos.x,0,player.pos.z-enemy.pos.z);const dist=to.length();enemy.yaw=Math.atan2(to.x,to.z);if(dist>2.35)enemy.pos.addScaledVector(to.normalize(),(dist>8?5.5:3.2)*dt);else enemyAttack();enemy.pos.x=THREE.MathUtils.clamp(enemy.pos.x,-31,31);enemy.pos.z=THREE.MathUtils.clamp(enemy.pos.z,-21,21);enemy.attackCd=Math.max(0,enemy.attackCd-dt)}
+function updateCamera(){camera.position.copy(player.pos);camera.position.y=player.pos.y+.65;const f=forward(player.yaw);f.y=Math.sin(player.pitch);camera.lookAt(camera.position.clone().add(f.multiplyScalar(10)))}
+function updateEnemyView(){enemyView.group.position.copy(enemy.pos);enemyView.group.rotation.y=enemy.yaw}
+function updateWeaponAnim(dt){const w=hand.children[0];if(player.attackAnim>0){player.attackAnim-=dt;const t=Math.max(0,player.attackAnim/(.22/weapons[currentWeapon].speed));w.rotation.z=-.22-1.15*(1-t);w.rotation.x=-.25+.8*(1-t)}else{w.rotation.z=THREE.MathUtils.lerp(w.rotation.z,-.22,.22);w.rotation.x=THREE.MathUtils.lerp(w.rotation.x,-.25,.22)}}
+function updateHud(){const w=weapons[currentWeapon];document.querySelector('#hp').style.width=player.hp+'%';document.querySelector('#info').innerHTML='<b>'+w.name+'</b> · Hasar '+w.damage+' · Menzil '+w.range+'<br>Atılma: '+player.dashes+'/2';document.querySelector('#weapon').textContent='⚔️ '+w.name;document.querySelector('#score').textContent='RAKİP CANI: '+enemy.hp}
+let last=performance.now();function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.033);last=now;if(running){movePlayer(dt);moveEnemy(dt);updateCamera();updateEnemyView();updateWeaponAnim(dt);updateHud()}renderer.render(scene,camera)}animate(performance.now());
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script></body></html>
