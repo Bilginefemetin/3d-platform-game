@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PVP Arena</title>
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07101c;font-family:Inter,system-ui,Arial;color:#fff}
+#game{position:fixed;inset:0}canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+.card{position:absolute;top:18px;width:290px;padding:14px 16px;background:rgba(5,10,18,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:16px}
+#p1{left:18px}#p2{right:18px;text-align:right}
+.name{font-weight:900;font-size:18px}.bar{height:13px;background:#1a2330;border-radius:99px;overflow:hidden;margin-top:8px}.fill{height:100%;width:100%;transition:width .12s}.blue{background:#32a8ff}.red{background:#ff4d67}
+#score{position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:30px;font-weight:1000;text-shadow:0 3px 20px #000}
+#help{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:12px;background:rgba(5,10,18,.7);font-size:13px;color:#c9d4e5;text-align:center}
+#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:52px;font-weight:1000;text-align:center;text-shadow:0 5px 30px #000;display:none}
+button{pointer-events:auto;border:0;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer}
+#restart{margin-top:16px}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="hud">
+ <div id="p1" class="card"><div class="name">🔵 OYUNCU 1</div><div class="bar"><div id="hp1" class="fill blue"></div></div><small id="dash1">Atılma: 2/2</small></div>
+ <div id="p2" class="card"><div class="name">🔴 OYUNCU 2</div><div class="bar"><div id="hp2" class="fill red"></div></div><small id="dash2">Atılma: 2/2</small></div>
+ <div id="score">0 - 0</div>
+ <div id="help">P1: <b>WASD</b> hareket · <b>F</b> ateş · <b>G</b> atılma &nbsp;&nbsp; | &nbsp;&nbsp; P2: <b>Ok tuşları</b> · <b>L</b> ateş · <b>K</b> atılma</div>
+ <div id="message"></div>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x081321);
+scene.fog=new THREE.Fog(0x081321,35,95);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,150);
+camera.position.set(0,34,34); camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true; document.querySelector('#game').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xbfe4ff,0x17202c,2));
+const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(10,35,15);sun.castShadow=true;scene.add(sun);
+
+function meshBox(x,y,z,w,h,d,color,em=0){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.65,emissive:em,emissiveIntensity:.5}));
+ m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+meshBox(0,-1,0,70,2,52,0x1b2635);
+for(const [x,z,w,d] of [[0,-25,70,2],[0,25,70,2],[-35,0,2,52],[35,0,2,52]])meshBox(x,3,z,w,8,d,0x263446);
+for(const p of [[0,0,0,12,2,5],[-20,1,-7,8,2,7],[20,1,7,8,2,7],[0,2,15,7,2,5],[0,2,-15,7,2,5]])meshBox(...p,0x31445a);
+
+const keys={};addEventListener('keydown',e=>keys[e.code]=true);addEventListener('keyup',e=>keys[e.code]=false);
+
+const players=[
+ {id:1,pos:new THREE.Vector3(-22,1.2,0),color:0x32a8ff,hp:100,score:0,dashes:2,dashCd:0,shootCd:0,hitCd:0,keys:['KeyW','KeyS','KeyA','KeyD'],fire:'KeyF',dash:'KeyG',rot:0},
+ {id:2,pos:new THREE.Vector3(22,1.2,0),color:0xff4d67,hp:100,score:0,dashes:2,dashCd:0,shootCd:0,hitCd:0,keys:['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'],fire:'KeyL',dash:'KeyK',rot:Math.PI}
+];
+function makePlayer(p){
+ const g=new THREE.Group();g.position.copy(p.pos);
+ const body=new THREE.Mesh(new THREE.CapsuleGeometry(1.05,1.3,6,12),new THREE.MeshStandardMaterial({color:p.color,roughness:.4,metalness:.15}));
+ body.castShadow=true;g.add(body);
+ const visor=new THREE.Mesh(new THREE.BoxGeometry(.95,.35,.22),new THREE.MeshStandardMaterial({color:0x07101b,metalness:.7,roughness:.2}));
+ visor.position.set(0,.45,-.9);g.add(visor);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,.06,8,24),new THREE.MeshBasicMaterial({color:p.color,transparent:true,opacity:.7}));
+ ring.rotation.x=Math.PI/2;ring.position.y=-1.05;g.add(ring);
+ scene.add(g);p.mesh=g;p.body=body;
+}
+players.forEach(makePlayer);
+
+const bullets=[];
+function shoot(p){
+ if(p.shootCd>0||p.hp<=0)return;
+ p.shootCd=.28;
+ const dir=new THREE.Vector3(p.id===1?1:-1,0,0);
+ // aim toward the opponent, making the game easy to control
+ const target=players[p.id===1?1:0];
+ dir.subVectors(new THREE.Vector3(target.pos.x,0,target.pos.z),new THREE.Vector3(p.pos.x,0,p.pos.z)).normalize();
+ const b=new THREE.Mesh(new THREE.SphereGeometry(.22,10,10),new THREE.MeshBasicMaterial({color:p.color}));
+ b.position.set(p.pos.x,1.1,p.pos.z);b.userData={owner:p,vel:dir.multiplyScalar(30),life:2.2};scene.add(b);bullets.push(b);
+}
+function dash(p){
+ if(p.dashes<=0||p.dashCd>0||p.hp<=0)return;
+ p.dashes--;p.dashCd=.35;
+ const target=players[p.id===1?1:0];
+ const d=new THREE.Vector3(target.pos.x-p.pos.x,0,target.pos.z-p.pos.z).normalize();
+ p.pos.addScaledVector(d,7);
+ p.pos.x=THREE.MathUtils.clamp(p.pos.x,-31,31);p.pos.z=THREE.MathUtils.clamp(p.pos.z,-21,21);
+}
+function damage(p,n){
+ if(p.hitCd>0)return;
+ p.hp=Math.max(0,p.hp-n);p.hitCd=.12;
+ p.body.scale.set(1.15,.85,1.15);setTimeout(()=>p.body?.scale.set(1,1,1),90);
+ if(p.hp===0){const winner=players[p.id===1?1:0];winner.score++;updateScore();endRound(winner)}
+}
+function endRound(winner){
+ running=false;message.style.display='block';
+ message.innerHTML=(winner.id===1?'🔵 OYUNCU 1':'🔴 OYUNCU 2')+' KAZANDI!<br><button id="restart">YENİ RAUNT</button>';
+ document.querySelector('#restart').onclick=resetRound;
+}
+function resetRound(){
+ players[0].pos.set(-22,1.2,0);players[1].pos.set(22,1.2,0);
+ players.forEach(p=>{p.hp=100;p.dashes=2;p.dashCd=0;p.shootCd=0;p.hitCd=0});
+ bullets.forEach(b=>scene.remove(b));bullets.length=0;message.style.display='none';running=true;
+}
+function updateScore(){score.textContent=players[0].score+' - '+players[1].score}
+const hp1=document.querySelector('#hp1'),hp2=document.querySelector('#hp2'),dash1=document.querySelector('#dash1'),dash2=document.querySelector('#dash2'),score=document.querySelector('#score'),message=document.querySelector('#message');
+let running=true,last=performance.now();
+function move(p,dt){
+ const [up,down,left,right]=p.keys;
+ const v=new THREE.Vector3((keys[right]?1:0)-(keys[left]?1:0),0,(keys[down]?1:0)-(keys[up]?1:0));
+ if(v.lengthSq()){v.normalize();p.pos.addScaledVector(v,11*dt);p.rot=Math.atan2(v.x,v.z);}
+ p.pos.x=THREE.MathUtils.clamp(p.pos.x,-31,31);p.pos.z=THREE.MathUtils.clamp(p.pos.z,-21,21);
+ p.mesh.position.copy(p.pos);p.mesh.rotation.y=p.rot;
+ if(keys[p.fire])shoot(p);
+ if(keys[p.dash]){if(!p._dashHeld)dash(p);p._dashHeld=true}else p._dashHeld=false;
+ p.shootCd=Math.max(0,p.shootCd-dt);p.dashCd=Math.max(0,p.dashCd-dt);p.hitCd=Math.max(0,p.hitCd-dt);
+ if(p.dashes<2&&p.dashCd===0)p.dashes=2;
+}
+function updateBullets(dt){
+ for(let i=bullets.length-1;i>=0;i--){
+  const b=bullets[i];b.position.addScaledVector(b.userData.vel,dt);b.userData.life-=dt;
+  const target=b.userData.owner.id===1?players[1]:players[0];
+  if(b.position.distanceTo(new THREE.Vector3(target.pos.x,1.1,target.pos.z))<1.45){damage(target,25);scene.remove(b);bullets.splice(i,1);continue}
+  if(b.userData.life<=0||Math.abs(b.position.x)>34||Math.abs(b.position.z)>24){scene.remove(b);bullets.splice(i,1)}
+ }
+}
+function hud(){
+ hp1.style.width=players[0].hp+'%';hp2.style.width=players[1].hp+'%';
+ dash1.textContent='Atılma: '+players[0].dashes+'/2';dash2.textContent='Atılma: '+players[1].dashes+'/2';
+}
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.033);last=now;
+ if(running){players.forEach(p=>move(p,dt));updateBullets(dt);hud()}
+ renderer.render(scene,camera);
+}
+updateScore();animate(performance.now());
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
