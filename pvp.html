@@ -20,7 +20,62 @@ const keys={};let mouseDown=false;addEventListener('keydown',e=>{keys[e.code]=tr
 const weapons={sword:{name:'KILIÇ',damage:24,range:3.2,arc:1.05,cool:.42,color:0xdfe8f2,kind:'sword',speed:1},axe:{name:'BALTA',damage:42,range:2.7,arc:.72,cool:.95,color:0xb8c1ca,kind:'axe',speed:.72},dagger:{name:'HANÇER',damage:14,range:2.35,arc:.5,cool:.18,color:0x9ee8ff,kind:'dagger',speed:1.35},spear:{name:'MIZRAK',damage:26,range:4,arc:.42,cool:.62,color:0xd8e0e8,kind:'spear',speed:.88},hammer:{name:'ÇEKİÇ',damage:36,range:2.55,arc:.78,cool:.78,color:0xc4ccd4,kind:'hammer',speed:.82}};
 const kitOrder=['sword','axe','dagger','spear','hammer'];let selectedKit='sword',currentWeapon='sword',practiceActive=false,practiceDifficulty='normal';const DIFFICULTIES={easy:{speed:2.4,range:2.35,damage:10,cool:1.2},normal:{speed:3.4,range:2.35,damage:18,cool:.75},hard:{speed:4.8,range:2.5,damage:28,cool:.48}};const player={pos:new THREE.Vector3(0,1.2,19),yaw:0,pitch:0,hp:100,attackCd:0,dashCd:0,dashes:2,heals:4,healCd:0,attackAnim:0};const enemy={pos:new THREE.Vector3(0,1.2,-18),yaw:0,hp:100,attackCd:0};
 function body(color){const g=new THREE.Group();const b=new THREE.Mesh(new THREE.CapsuleGeometry(1.05,1.3,6,12),new THREE.MeshStandardMaterial({color,roughness:.42}));b.castShadow=true;g.add(b);const v=new THREE.Mesh(new THREE.BoxGeometry(.95,.35,.22),new THREE.MeshStandardMaterial({color:0x07101b,metalness:.7,roughness:.2}));v.position.set(0,.45,-.9);g.add(v);scene.add(g);return{group:g}}const enemyView=body(0xff4d67);const camera=new THREE.PerspectiveCamera(78,innerWidth/innerHeight,.08,120);scene.add(camera);const hand=new THREE.Group();camera.add(hand);
-function makeWeapon(d){const g=new THREE.Group();if(d.kind==='sword'){const b=new THREE.Mesh(new THREE.BoxGeometry(.14,1.85,.09),new THREE.MeshStandardMaterial({color:d.color,metalness:.8,roughness:.18}));b.position.y=.92;g.add(b);const q=new THREE.Mesh(new THREE.BoxGeometry(.75,.1,.14),new THREE.MeshStandardMaterial({color:0x8b6b35,metalness:.6}));q.position.y=-.04;g.add(q);const h=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.62,10),new THREE.MeshStandardMaterial({color:0x4a2d20}));h.position.y=-.39;g.add(h)}else if(d.kind==='axe'){const h=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.9,10),new THREE.MeshStandardMaterial({color:0x633d25}));h.rotation.z=.12;h.position.y=.7;g.add(h);const q=new THREE.Mesh(new THREE.BoxGeometry(.9,.68,.16),new THREE.MeshStandardMaterial({color:d.color,metalness:.72,roughness:.2}));q.position.set(.25,1.45,0);q.rotation.z=-.28;g.add(q)}else if(d.kind==='dagger'){const b=new THREE.Mesh(new THREE.ConeGeometry(.15,.9,4),new THREE.MeshStandardMaterial({color:d.color,metalness:.8,roughness:.15}));b.rotation.z=-Math.PI/2;b.position.x=.52;g.add(b);const h=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.52,10),new THREE.MeshStandardMaterial({color:0x3b251c}));h.rotation.z=Math.PI/2;h.position.x=-.1;g.add(h)}else if(d.kind==='spear'){const h=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,2.45,10),new THREE.MeshStandardMaterial({color:0x633d25}));h.rotation.z=Math.PI/2;h.position.x=.15;g.add(h);const t=new THREE.Mesh(new THREE.ConeGeometry(.13,.58,6),new THREE.MeshStandardMaterial({color:d.color,metalness:.8,roughness:.2}));t.rotation.z=-Math.PI/2;t.position.x=1.52;g.add(t)}else{const h=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.45,10),new THREE.MeshStandardMaterial({color:0x633d25}));h.rotation.z=Math.PI/2;h.position.x=.05;g.add(h);const q=new THREE.Mesh(new THREE.BoxGeometry(.48,.65,.42),new THREE.MeshStandardMaterial({color:d.color,metalness:.7,roughness:.25}));q.position.x=.78;g.add(q)}g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g}
+function makeBlade(width,length,material,tip=0.0){
+ const s=new THREE.Shape();
+ const w=width;
+ s.moveTo(-w*.42,0);
+ s.lineTo(w*.42,0);
+ s.lineTo(w*.34,length*.72);
+ s.lineTo(w*.16,length*.9);
+ s.lineTo(0,length);
+ s.lineTo(-w*.16,length*.9);
+ s.lineTo(-w*.34,length*.72);
+ s.closePath();
+ const g=new THREE.ExtrudeGeometry(s,{depth:.12,bevelEnabled:true,bevelSegments:2,bevelSize:.035,bevelThickness:.025});
+ g.center();
+ const m=new THREE.Mesh(g,material);
+ m.rotation.x=0;
+ return m
+}
+function makeWeapon(d){
+ const g=new THREE.Group();
+ const steel=new THREE.MeshStandardMaterial({color:d.color,metalness:.9,roughness:.18});
+ const darkSteel=new THREE.MeshStandardMaterial({color:0x4b4f59,metalness:.85,roughness:.22});
+ const bronze=new THREE.MeshStandardMaterial({color:0x9b6a32,metalness:.72,roughness:.24});
+ const leather=new THREE.MeshStandardMaterial({color:0x3b2117,roughness:.82});
+ const accent=new THREE.MeshStandardMaterial({color:0xb98a43,metalness:.7,roughness:.25});
+
+ if(d.kind==='sword'){
+   const blade=makeBlade(.56,2.65,steel); blade.position.y=1.25; g.add(blade);
+   const fuller=new THREE.Mesh(new THREE.BoxGeometry(.10,1.72,.035),new THREE.MeshStandardMaterial({color:0x7d8795,metalness:.9,roughness:.16}));
+   fuller.position.set(0,1.34,-.075); g.add(fuller);
+   const guard=new THREE.Mesh(new THREE.TorusGeometry(.48,.075,8,24,Math.PI),bronze);
+   guard.rotation.z=Math.PI; guard.position.set(0,-.12,0); g.add(guard);
+   const cross=new THREE.Mesh(new THREE.BoxGeometry(1.02,.12,.16),bronze); cross.position.y=-.13; cross.rotation.z=.03; g.add(cross);
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.11,.12,.72,12),leather); grip.position.y=-.54; g.add(grip);
+   for(let i=0;i<5;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(.115,.018,6,14),accent);ring.rotation.x=Math.PI/2;ring.position.y=-.30-i*.12;g.add(ring)}
+   const pommel=new THREE.Mesh(new THREE.BoxGeometry(.30,.30,.20),bronze);pommel.position.y=-.98;pommel.rotation.z=Math.PI/4;g.add(pommel);
+   const gem=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.05),steel);gem.position.set(0,-.98,-.13);gem.rotation.z=Math.PI/4;g.add(gem);
+ } else if(d.kind==='dagger'){
+   const blade=makeBlade(.40,1.55,steel); blade.position.y=.92; g.add(blade);
+   const fuller=new THREE.Mesh(new THREE.BoxGeometry(.075,.95,.03),darkSteel);fuller.position.set(0,1.0,-.075);g.add(fuller);
+   const guard=new THREE.Mesh(new THREE.BoxGeometry(.72,.11,.16),bronze);guard.position.y=.10;guard.rotation.z=-.08;g.add(guard);
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.09,.105,.52,10),leather);grip.position.y=-.20;g.add(grip);
+   for(let i=0;i<4;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(.092,.016,6,14),accent);ring.rotation.x=Math.PI/2;ring.position.y=-.01-i*.115;g.add(ring)}
+   const pommel=new THREE.Mesh(new THREE.CylinderGeometry(.14,.16,.20,8),bronze);pommel.position.y=-.54;g.add(pommel);
+ } else if(d.kind==='axe'){
+   const h=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1.9,10),leather);h.rotation.z=.12;h.position.y=.7;g.add(h);
+   const q=new THREE.Mesh(new THREE.BoxGeometry(.9,.68,.16),steel);q.position.set(.25,1.45,0);q.rotation.z=-.28;g.add(q);
+ } else if(d.kind==='spear'){
+   const h=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,2.45,10),leather);h.rotation.z=Math.PI/2;h.position.x=.15;g.add(h);
+   const t=new THREE.Mesh(new THREE.ConeGeometry(.13,.58,6),steel);t.rotation.z=-Math.PI/2;t.position.x=1.52;g.add(t);
+ } else {
+   const h=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.45,10),leather);h.rotation.z=Math.PI/2;h.position.x=.05;g.add(h);
+   const q=new THREE.Mesh(new THREE.BoxGeometry(.48,.65,.42),steel);q.position.x=.78;g.add(q);
+ }
+ g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+ return g
+}
 function switchWeapon(name){currentWeapon=name;hand.clear();const w=makeWeapon(weapons[name]);w.position.set(.7,-.62,-1.05);w.rotation.set(-.25,0,-.22);hand.add(w);player.attackAnim=0;updateHud()}
 function selectKit(n){if(n<1||n>5)return;selectedKit=kitOrder[n-1];document.querySelectorAll('.kit').forEach(b=>b.classList.toggle('selected',b.dataset.kit===selectedKit));document.querySelector('#kitInfo').textContent={sword:'KILIÇ — dengeli saldırı hızı, menzil ve hasar.',axe:'BALTA — yüksek hasar ama yavaş.',dagger:'HANÇER — çok hızlı ama kısa menzilli.',spear:'MIZRAK — uzun menzilli, dar vuruş açılı.',hammer:'ÇEKİÇ — güçlü yakın vuruş, yavaş.'}[selectedKit]}switchWeapon('sword');
 function forward(y){return new THREE.Vector3(Math.sin(y),0,-Math.cos(y))}
